@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PolicyPro CRM — Life Insurance</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ── LOADING OVERLAY ── -->
+<div id="loading-overlay" class="loading-overlay" style="display:flex">
+  <div style="text-align:center">
+    <div class="loading-spinner"></div>
+    <div style="margin-top:16px;font-size:14px;font-weight:600;color:var(--text2)">Loading your data…</div>
+  </div>
+</div>
+
+<!-- ── SIDEBAR ── -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">🛡</div>
+    <div>
+      <div class="logo-name">Policy<em>Pro</em></div>
+      <div class="logo-sub">LIFE INSURANCE CRM</div>
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Calls</div>
+    <div class="nav-item" onclick="go('callers')" id="nav-callers">
+      <span class="nav-icon">📞</span> Incoming Calls
+      <span class="nav-count" id="cnt-callers">0</span>
+    </div>
+    <div class="nav-item" onclick="go('callhistory')" id="nav-callhistory">
+      <span class="nav-icon">📅</span> Call History
+      <span class="nav-count" id="cnt-callhistory">0</span>
+    </div>
+  </div>
+
+  <div class="sidebar-div"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">CRM</div>
+    <div class="nav-item active" onclick="go('prospects')" id="nav-prospects">
+      <span class="nav-icon">👥</span> Prospects
+      <span class="nav-count" id="cnt-prospects">0</span>
+    </div>
+    <div class="nav-item" onclick="go('clients')" id="nav-clients">
+      <span class="nav-icon">🛡</span> Active Clients
+      <span class="nav-count" id="cnt-clients">0</span>
+    </div>
+    <div class="nav-item" onclick="go('dashboard')" id="nav-dashboard">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+  </div>
+
+  <div class="sidebar-div"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Tools</div>
+    <div class="nav-item" onclick="go('tasks')" id="nav-tasks">
+      <span class="nav-icon">✅</span> Follow-Ups
+      <span class="nav-count" id="cnt-tasks">0</span>
+    </div>
+    <div class="nav-item" onclick="go('chargebacks')" id="nav-chargebacks">
+      <span class="nav-icon">⚠️</span> Chargebacks
+      <span class="nav-count" id="cnt-chargebacks">0</span>
+    </div>
+  </div>
+
+  <div class="sidebar-div"></div>
+
+  <div class="sidebar-section">
+    <div class="nav-item" onclick="exportData()">
+      <span class="nav-icon">📤</span> Export JSON
+    </div>
+    <div class="nav-item" onclick="document.getElementById('imp').click()">
+      <span class="nav-icon">📥</span> Import JSON
+    </div>
+    <div class="nav-item" onclick="handleSignOut()">
+      <span class="nav-icon">🚪</span> Sign Out
+    </div>
+  </div>
+
+  <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(event)">
+
+  <div class="sidebar-footer">
+    <div class="theme-toggle" onclick="toggleTheme()" title="Switch theme">
+      <div class="theme-toggle-label">
+        <span id="theme-icon">🌙</span>
+        <span id="theme-label">Dark Mode</span>
+      </div>
+      <div class="theme-pill" id="theme-pill"></div>
+    </div>
+    <div class="agent-badge" style="margin-top:10px">
+      <div class="agent-dot"></div>
+      <div>
+        <div class="agent-name" id="agent-name-display">Agent</div>
+        <div class="agent-status">Online · PolicyPro</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<div id="main">
+  <div id="topbar">
+    <div class="page-title" id="page-title">Prospects</div>
+    <div class="view-tabs" id="view-tabs">
+      <div class="view-tab active" onclick="setView('grid')" id="tab-grid">⊞ Grid</div>
+      <div class="view-tab" onclick="setView('list')" id="tab-list">☰ List</div>
+      <div class="view-tab" onclick="setView('kanban')" id="tab-kanban">⊟ Board</div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="search-wrap">
+      <span style="color:var(--text3)">🔍</span>
+      <input id="search-inp" placeholder="Search name, carrier, phone…" oninput="renderCurrent()">
+    </div>
+    <button class="tb-btn" onclick="toggleFilter()">⚙ Filter</button>
+    <button class="tb-btn primary" onclick="openNew()" id="add-btn">＋ Add Record</button>
+  </div>
+  <div id="content"></div>
+</div>
+
+<!-- Scripts — order matters: config → db → utils → render → modal → app -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script>
+(function () {
+  function getClient() {
+    if (window.supabaseClient && window.supabaseClient.auth) return window.supabaseClient;
+    if (window.db && window.db.auth) return window.db;
+    if (window.sb && window.sb.auth) return window.sb;
+    if (window.supabase && window.supabase.auth && !window.supabase.createClient) return window.supabase;
+    if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase && window.supabase.createClient) {
+      window.supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      return window.supabaseClient;
+    }
+    return null;
+  }
+
+  var client = getClient();
+  if (!client) {
+    document.body.innerHTML = '<div style="font-family:system-ui;padding:40px;color:white;background:#0f172a;min-height:100vh"><h2>Supabase is not configured</h2><p>Check js/config.js for SUPABASE_URL and SUPABASE_ANON_KEY.</p><p><a style="color:#93c5fd" href="index.html">Back to login</a></p></div>';
+    return;
+  }
+
+  client.auth.getSession().then(function (result) {
+    if (!result || !result.data || !result.data.session) {
+      document.body.innerHTML = '<div style="font-family:system-ui;padding:40px;color:white;background:#0f172a;min-height:100vh"><h2>Please sign in first</h2><p>Your login session was not found.</p><p><a style="color:#93c5fd" href="index.html">Go to login</a></p></div>';
+      return;
+    }
+  }).catch(function () {
+    document.body.innerHTML = '<div style="font-family:system-ui;padding:40px;color:white;background:#0f172a;min-height:100vh"><h2>Could not check login session</h2><p>Please sign in again.</p><p><a style="color:#93c5fd" href="index.html">Go to login</a></p></div>';
+  });
+
+  window.policyProAuthClient = client;
+})();
+</script>
+<script src="js/utils.js"></script>
+<script src="js/render.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+window.handleSignOut = async function () {
+  var client = window.policyProAuthClient || window.supabaseClient || window.db || window.sb || window.supabase;
+  if (client && client.auth) await client.auth.signOut();
+  window.location.replace('index.html');
+};
+</script>
+
+</body>
+</html>
