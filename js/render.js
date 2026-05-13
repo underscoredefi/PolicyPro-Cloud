@@ -1,4 +1,4 @@
-// ── RENDER FUNCTIONS ──────────────────────────────────────────────────────────
+// ── RENDER FUNCTIONS — v2 (call history fixes) ───────────────────────────────
 
 function renderCurrent() {
   const q = document.getElementById('search-inp').value.toLowerCase();
