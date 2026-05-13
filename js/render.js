@@ -479,14 +479,19 @@ function renderChargebacks() {
 }
 
 // ── CALL HISTORY ─────────────────────────────────────────────────────────────
-let chDateFrom = '', chDateTo = '', chSearch = '';
+let chDateFrom = '', chDateTo = '', chSearch = '', chInitialized = false;
 
 function renderCallHistory() {
   const hist = ldCallHistory();
   const c = document.getElementById('content');
   const allDates = [...new Set(hist.map(r => isoToDate(r.created)).filter(Boolean))].sort().reverse();
   const today = new Date().toISOString().slice(0, 10);
-  if (!chDateFrom && !chDateTo) { chDateFrom = today; chDateTo = today; }
+
+  // Default to today only on the very first render — not after "All Time" clears the range
+  if (!chInitialized) { chDateFrom = today; chDateTo = today; chInitialized = true; }
+
+  // Preserve search focus across re-renders
+  const wasSearchFocused = document.activeElement && document.activeElement.id === 'ch-search';
 
   let filtered = hist.filter(r => {
     if (chSearch) {
@@ -511,17 +516,24 @@ function renderCallHistory() {
   const sortedDates = Object.keys(groups).sort().reverse();
 
   let html = `
-  <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:flex-end">
-    <div><div style="font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">From Date</div>
-      <input type="date" class="fi" value="${chDateFrom}" onchange="chDateFrom=this.value;renderCallHistory()" style="width:160px"></div>
-    <div><div style="font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">To Date</div>
-      <input type="date" class="fi" value="${chDateTo}" onchange="chDateTo=this.value;renderCallHistory()" style="width:160px"></div>
-    <div style="flex:1;min-width:160px"><div style="font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">Search</div>
-      <input class="fi" value="${esc(chSearch)}" placeholder="Name, phone, carrier…" oninput="chSearch=this.value;renderCallHistory()" style="width:100%"></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="tb-btn" onclick="chDateFrom=chDateTo=new Date().toISOString().slice(0,10);renderCallHistory()">Today</button>
+  <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
+    <div>
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">From</div>
+      <input type="date" class="fi" value="${chDateFrom}" onchange="chDateFrom=this.value;renderCallHistory()" style="width:150px">
+    </div>
+    <div>
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">To</div>
+      <input type="date" class="fi" value="${chDateTo}" onchange="chDateTo=this.value;renderCallHistory()" style="width:150px">
+    </div>
+    <div style="flex:1;min-width:180px">
+      <div style="font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">Search</div>
+      <input id="ch-search" class="fi" value="${esc(chSearch)}" placeholder="Name, phone, carrier…" oninput="chSearch=this.value;renderCallHistory()" style="width:100%">
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;padding-bottom:1px">
+      <button class="tb-btn" onclick="chDateFrom=chDateTo=new Date().toISOString().slice(0,10);chSearch='';renderCallHistory()">Today</button>
       <button class="tb-btn" onclick="setChWeek()">This Week</button>
-      <button class="tb-btn" onclick="chDateFrom='';chDateTo='';renderCallHistory()">All Time</button>
+      <button class="tb-btn" onclick="setChLastWeek()">Last Week</button>
+      <button class="tb-btn" onclick="chDateFrom='';chDateTo='';chSearch='';renderCallHistory()">All Time</button>
       <button class="tb-btn" onclick="exportCallRange()" style="border-color:var(--gold);color:var(--gold)">📤 Export Range</button>
     </div>
   </div>
@@ -538,15 +550,23 @@ function renderCallHistory() {
       <div style="font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Total Logged</div>
       <div style="font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text2)">${hist.length}</div>
     </div>
-  </div>
-  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
-    <span style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px">JUMP TO DATE:</span>
-    ${allDates.slice(0, 14).map(d => `<div class="f-chip ${d === chDateFrom && d === chDateTo ? 'on' : ''}" onclick="chDateFrom='${d}';chDateTo='${d}';renderCallHistory()" style="font-family:'JetBrains Mono',monospace;font-size:11.5px">${fmtDateLabel(d)}</div>`).join('')}
   </div>`;
+
+  if (allDates.length > 0) {
+    html += `
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Jump to Date</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${allDates.slice(0, 20).map(d => `<div class="f-chip ${d === chDateFrom && d === chDateTo && !chSearch ? 'on' : ''}" onclick="chDateFrom='${d}';chDateTo='${d}';chSearch='';renderCallHistory()" style="font-family:'JetBrains Mono',monospace;font-size:11px">${fmtDateLabel(d)}</div>`).join('')}
+    </div>
+  </div>`;
+  }
 
   if (!sortedDates.length) {
     html += `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">No calls found</div><div class="empty-sub">Try adjusting the date range or search filter</div></div>`;
-    c.innerHTML = html; return;
+    c.innerHTML = html;
+    if (wasSearchFocused) { const si = document.getElementById('ch-search'); if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); } }
+    return;
   }
 
   const allProspects = ld('prospects');
@@ -598,14 +618,37 @@ function renderCallHistory() {
     });
     html += '</tbody></table></div></div>';
   });
+
   c.innerHTML = html;
+  if (wasSearchFocused) {
+    const si = document.getElementById('ch-search');
+    if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
+  }
 }
 
 function setChWeek() {
   const now = new Date();
-  const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1);
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  mon.setHours(0, 0, 0, 0);
   chDateFrom = mon.toISOString().slice(0, 10);
   chDateTo   = now.toISOString().slice(0, 10);
+  chSearch = '';
+  renderCallHistory();
+}
+
+function setChLastWeek() {
+  const now = new Date();
+  const thisMon = new Date(now);
+  thisMon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  thisMon.setHours(0, 0, 0, 0);
+  const lastMon = new Date(thisMon);
+  lastMon.setDate(thisMon.getDate() - 7);
+  const lastSun = new Date(lastMon);
+  lastSun.setDate(lastMon.getDate() + 6);
+  chDateFrom = lastMon.toISOString().slice(0, 10);
+  chDateTo   = lastSun.toISOString().slice(0, 10);
+  chSearch = '';
   renderCallHistory();
 }
 
