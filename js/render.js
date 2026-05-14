@@ -104,16 +104,16 @@ function buildGridView(sec, data) {
     }
 
     html += `<tr onclick="openDetail('${sec}','${r.id}')">
-      <td style="font-weight:600">${r.first} ${r.last}</td>
+      <td style="font-weight:600">${esc(r.first)} ${esc(r.last)}</td>
       <td>
         <div style="font-size:12.5px;color:var(--text2)">${fmtDOB(r.dob)}</div>
         ${age !== null ? `<div class="age-badge" style="margin-top:3px">Age ${age}</div>` : ''}
       </td>
-      <td style="color:var(--text2);font-size:12.5px">${r.phone || '—'}</td>
+      <td style="color:var(--text2);font-size:12.5px">${esc(r.phone) || '—'}</td>
       <td><span class="mono" style="color:var(--gold);font-size:13px">${r.noInsurance ? '—' : fmtMoney(dispCoverage)}</span></td>
       <td><span class="mono" style="color:var(--green);font-size:13px">${r.noInsurance ? '—' : fmtPrem(dispPremium)}</span></td>
-      <td style="font-size:12.5px;${r.noInsurance ? 'color:var(--red);font-weight:700' : 'color:var(--text2);max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'}">${r.noInsurance ? 'No Known Coverage' : (dispCarrier || '—')}</td>
-      <td style="color:var(--text2);font-size:12.5px">${dispProduct || '—'}</td>
+      <td style="font-size:12.5px;${r.noInsurance ? 'color:var(--red);font-weight:700' : 'color:var(--text2);max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'}">${r.noInsurance ? 'No Known Coverage' : (esc(dispCarrier) || '—')}</td>
+      <td style="color:var(--text2);font-size:12.5px">${esc(dispProduct) || '—'}</td>
       ${sec === 'callers' ? callerCells : `<td>${commissionTag(r)}</td>`}
     </tr>`;
   });
@@ -145,8 +145,8 @@ function buildListView(sec, data) {
     }
 
     html += `<div class="list-row" onclick="openDetail('${sec}','${r.id}')">
-      <div class="lr-name">${r.first} ${r.last}</div>
-      <div class="lr-co" style="${r.noInsurance ? 'color:var(--red);font-weight:700' : ''}">${r.noInsurance ? 'No Known Coverage' : (dispCarrier || 'No carrier')}</div>
+      <div class="lr-name">${esc(r.first)} ${esc(r.last)}</div>
+      <div class="lr-co" style="${r.noInsurance ? 'color:var(--red);font-weight:700' : ''}">${r.noInsurance ? 'No Known Coverage' : (esc(dispCarrier) || 'No carrier')}</div>
       ${age !== null ? `<div class="lr-age">Age ${age}</div>` : '<div style="width:52px"></div>'}
       <div class="lr-cov">${fmtMoney(dispCoverage)}</div>
       <div class="lr-prem">${fmtPrem(dispPremium)}</div>
@@ -187,13 +187,13 @@ function buildKanbanView(sec, data) {
       const dispPremium  = r.premium  || firstPol?.premium  || '';
       const dispCarrier  = r.carrier  || firstPol?.carrier  || '';
       html += `<div class="kb-card" onclick="openDetail('${sec}','${r.id}')">
-        <div class="kc-name">${r.first} ${r.last}</div>
+        <div class="kc-name">${esc(r.first)} ${esc(r.last)}</div>
         <div class="kc-dob"><span style="font-size:11.5px;color:var(--text3)">DOB: ${fmtDOB(r.dob)}</span>${age !== null ? `<span class="age-badge">Age ${age}</span>` : ''}</div>
         <div class="kc-vals">
           <div class="kc-val-item"><div class="kc-val-lbl">Coverage</div><div class="kc-val-num">${fmtMoney(dispCoverage)}</div></div>
           <div class="kc-val-item"><div class="kc-val-lbl">Premium</div><div class="kc-val-num" style="color:var(--green)">${fmtPrem(dispPremium)}</div></div>
         </div>
-        <div class="kc-foot"><span style="font-size:11.5px;color:var(--text3)">${dispCarrier || 'No carrier'}</span></div>
+        <div class="kc-foot"><span style="font-size:11.5px;color:var(--text3)">${esc(dispCarrier) || 'No carrier'}</span></div>
         ${sec === 'callers' ? `<div style="display:flex;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)" onclick="event.stopPropagation()">
           <button onclick="transferCaller('${r.id}','prospects')" style="flex:1;padding:5px 4px;border-radius:5px;border:1px solid var(--border2);background:var(--bg4);color:var(--gold);font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif">→ Prospect</button>
           <button onclick="transferCaller('${r.id}','clients')" style="flex:1;padding:5px 4px;border-radius:5px;border:1px solid var(--border2);background:var(--bg4);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif">→ Client</button>
@@ -232,10 +232,10 @@ function renderTasks(q = '') {
       <td onclick="event.stopPropagation()">
         <input type="checkbox" ${r.status === 'Done' ? 'checked' : ''} onchange="toggleTask('${r.id}',this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:var(--gold)">
       </td>
-      <td style="font-weight:600;${r.status === 'Done' ? 'text-decoration:line-through' : ''}">${r.title}</td>
-      <td style="color:var(--text2)">${r.contact || '—'}</td>
-      <td style="color:var(--text2);font-size:12.5px">${r.phone || '—'}</td>
-      <td style="color:${od ? 'var(--red)' : 'var(--text2)'};font-size:12.5px">${r.due || '—'}${od ? ' ⚠️' : ''}</td>
+      <td style="font-weight:600;${r.status === 'Done' ? 'text-decoration:line-through' : ''}">${esc(r.title)}</td>
+      <td style="color:var(--text2)">${esc(r.contact) || '—'}</td>
+      <td style="color:var(--text2);font-size:12.5px">${esc(r.phone) || '—'}</td>
+      <td style="color:${od ? 'var(--red)' : 'var(--text2)'};font-size:12.5px">${esc(r.due) || '—'}${od ? ' ⚠️' : ''}</td>
       <td>${sTag(r.priority || 'Medium')}</td>
       <td>${sTag(r.status || 'Open')}</td>
       <td onclick="event.stopPropagation()"><div class="icon-btn" onclick="deleteRec('tasks','${r.id}')">🗑</div></td>
@@ -341,8 +341,8 @@ function renderDashboard() {
     return `<div id="${panelId}" style="display:none;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:8px">
       ${rows.map(row => `
         <div onclick="openDetail('clients','${row.clientId}')" style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;gap:8px" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
-          <div style="min-width:0"><div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${row.name}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,.5)">${row.carrier}${row.product ? ' · ' + row.product : ''}</div></div>
+          <div style="min-width:0"><div style="font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(row.name)}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5)">${esc(row.carrier)}${row.product ? ' · ' + esc(row.product) : ''}</div></div>
           <div style="text-align:right;flex-shrink:0">
             <div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700">$${row.annual.toLocaleString('en-US', { maximumFractionDigits: 0 })}</div>
             <div style="font-size:10.5px;color:rgba(255,255,255,.45)">${row.soldDate ? new Date(row.soldDate + 'T12:00:00').toLocaleDateString([], { month: 'short', day: 'numeric' }) : '—'}</div>
@@ -461,12 +461,12 @@ function renderChargebacks() {
     const age = calcAge(r.dob);
     const hasCBamt = parseFloat(p.chargebackAmt) > 0;
     html += `<tr onclick="openDetail('clients','${r.id}')" style="cursor:pointer">
-      <td><div style="font-weight:600">${r.first} ${r.last}</div><div style="font-size:11.5px;color:var(--text2)">${r.phone || '—'}</div></td>
+      <td><div style="font-weight:600">${esc(r.first)} ${esc(r.last)}</div><div style="font-size:11.5px;color:var(--text2)">${esc(r.phone) || '—'}</div></td>
       <td><div style="font-size:12.5px;color:var(--text2)">${fmtDOB(r.dob)}</div>${age !== null ? `<div class="age-badge" style="margin-top:2px">Age ${age}</div>` : ''}</td>
-      <td style="color:var(--text2);font-size:12.5px">${r.phone || '—'}</td>
-      <td style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:12px">${p.policyNum || '—'}</td>
-      <td style="color:var(--text2);font-size:12.5px">${p.carrier || '—'}</td>
-      <td style="color:var(--text2);font-size:12.5px">${p.product || '—'}</td>
+      <td style="color:var(--text2);font-size:12.5px">${esc(r.phone) || '—'}</td>
+      <td style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:12px">${esc(p.policyNum) || '—'}</td>
+      <td style="color:var(--text2);font-size:12.5px">${esc(p.carrier) || '—'}</td>
+      <td style="color:var(--text2);font-size:12.5px">${esc(p.product) || '—'}</td>
       <td style="color:var(--gold);font-family:'JetBrains Mono',monospace">${fmtMoney(p.coverage)}</td>
       <td style="color:var(--green);font-family:'JetBrains Mono',monospace">${fmtPrem(p.premium)}</td>
       <td><span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--red)">${hasCBamt ? '$' + parseFloat(p.chargebackAmt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</span></td>
@@ -602,12 +602,12 @@ function renderCallHistory() {
 
       html += `<tr style="cursor:pointer" onclick="openHistoryDetail('${rid}')">
         <td style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">${timeStr}</td>
-        <td style="font-weight:600">${r.first} ${r.last}</td>
+        <td style="font-weight:600">${esc(r.first)} ${esc(r.last)}</td>
         <td><div style="font-size:12px;color:var(--text2)">${fmtDOB(r.dob)}</div>${age !== null ? `<div class="age-badge" style="margin-top:2px">Age ${age}</div>` : ''}</td>
-        <td style="color:var(--text2);font-size:12.5px">${r.phone || '—'}</td>
+        <td style="color:var(--text2);font-size:12.5px">${esc(r.phone) || '—'}</td>
         <td style="color:var(--gold);font-family:'JetBrains Mono',monospace;font-size:12.5px">${fmtMoney(r.coverage)}</td>
         <td style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:12.5px">${fmtPrem(r.premium)}</td>
-        <td style="color:var(--text2);font-size:12.5px">${r.carrier || '—'}</td>
+        <td style="color:var(--text2);font-size:12.5px">${esc(r.carrier) || '—'}</td>
         <td>${sTag(r.status || 'New')}</td>
         <td onclick="event.stopPropagation()">${badge}</td>
         <td onclick="event.stopPropagation()"><div style="display:flex;gap:5px">
