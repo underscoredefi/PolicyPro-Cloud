@@ -70,7 +70,7 @@ function sTag(s) {
 }
 
 function esc(v) {
-  return (v || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  return (v || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function toast(msg) {

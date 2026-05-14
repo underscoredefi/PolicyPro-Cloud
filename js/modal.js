@@ -45,8 +45,8 @@ function showModal(sec, rec, isNew) {
       <div class="modal" id="modal-inner">
         <div class="modal-hdr">
           <div style="flex:1;min-width:0">
-            <div class="modal-name">${isNew ? `New ${schema.title}` : headline}</div>
-            <div class="modal-sub">${subline}</div>
+            <div class="modal-name">${isNew ? `New ${schema.title}` : esc(headline)}</div>
+            <div class="modal-sub">${esc(subline)}</div>
             ${tsStr && !isNew ? `<div style="font-size:11px;color:var(--text3);margin-top:3px;font-family:'JetBrains Mono',monospace">📅 ${tsStr}</div>` : ''}
           </div>
           <div class="modal-close" onclick="attemptClose()">✕</div>
@@ -144,7 +144,7 @@ function buildPersonFields(sec, rec) {
   const notesHtml = notesList.map((n, i) => `
     <div id="note_${i}" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;position:relative">
       <div style="font-size:10.5px;color:var(--text3);margin-bottom:5px;font-family:'JetBrains Mono',monospace">${new Date(n.ts).toLocaleString()}</div>
-      <div style="font-size:13.5px;white-space:pre-wrap;line-height:1.5">${n.text.replace(/</g, '&lt;')}</div>
+      <div style="font-size:13.5px;white-space:pre-wrap;line-height:1.5">${esc(n.text)}</div>
       <button onclick="deleteNote(${i})" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">✕</button>
     </div>`).join('');
 
@@ -393,8 +393,8 @@ function buildPipelineFields(rec) {
   return `
     <div class="section-head">Applicant</div>
     <div class="field-grid">
-      <div><label class="fl">First Name</label><input class="fi" id="f_first" value="${rec.first || ''}"></div>
-      <div><label class="fl">Last Name</label><input class="fi" id="f_last" value="${rec.last || ''}"></div>
+      <div><label class="fl">First Name</label><input class="fi" id="f_first" value="${esc(rec.first)}"></div>
+      <div><label class="fl">Last Name</label><input class="fi" id="f_last" value="${esc(rec.last)}"></div>
       <div>
         <label class="fl">Date of Birth</label>
         <div class="dob-row">
@@ -404,14 +404,14 @@ function buildPipelineFields(rec) {
           </div>
         </div>
       </div>
-      <div><label class="fl">Phone</label><input class="fi" id="f_phone" value="${rec.phone || ''}"></div>
-      <div class="field-full"><label class="fl">Email</label><input class="fi" id="f_email" value="${rec.email || ''}"></div>
+      <div><label class="fl">Phone</label><input class="fi" id="f_phone" value="${esc(rec.phone)}"></div>
+      <div class="field-full"><label class="fl">Email</label><input class="fi" id="f_email" value="${esc(rec.email)}"></div>
     </div>
     <div class="section-head">Policy Details</div>
     <div class="field-grid">
-      <div><label class="fl">Coverage Amount</label><div class="prefix-wrap"><span class="prefix">$</span><input class="fi" id="f_coverage" value="${rec.coverage || ''}"></div></div>
-      <div><label class="fl">Monthly Premium</label><div class="prefix-wrap"><span class="prefix">$</span><input class="fi" id="f_premium" value="${rec.premium || ''}"></div></div>
-      <div><label class="fl">Carrier</label><input class="fi" id="f_carrier" value="${rec.carrier || ''}"></div>
+      <div><label class="fl">Coverage Amount</label><div class="prefix-wrap"><span class="prefix">$</span><input class="fi" id="f_coverage" value="${esc(rec.coverage)}"></div></div>
+      <div><label class="fl">Monthly Premium</label><div class="prefix-wrap"><span class="prefix">$</span><input class="fi" id="f_premium" value="${esc(rec.premium)}"></div></div>
+      <div><label class="fl">Carrier</label><input class="fi" id="f_carrier" value="${esc(rec.carrier)}"></div>
       <div><label class="fl">Product Type</label>
         <select class="fi" id="f_product">
           ${['','Term 10','Term 20','Term 30','Whole Life','Universal Life','Final Expense','Guaranteed Issue','Indexed UL','Other'].map(o => `<option ${o === (rec.product || '') ? 'selected' : ''}>${o}</option>`).join('')}
@@ -420,8 +420,8 @@ function buildPipelineFields(rec) {
         <select class="fi" id="f_stage">
           ${['Quoted','Submitted','Pending','Approved','Issued','Declined'].map(o => `<option ${o === (rec.stage || 'Submitted') ? 'selected' : ''}>${o}</option>`).join('')}
         </select></div>
-      <div><label class="fl">Policy Number</label><input class="fi" id="f_policyNum" value="${rec.policyNum || ''}"></div>
-      <div class="field-full"><label class="fl">Notes</label><textarea class="fi" id="f_notes">${rec.notes || ''}</textarea></div>
+      <div><label class="fl">Policy Number</label><input class="fi" id="f_policyNum" value="${esc(rec.policyNum)}"></div>
+      <div class="field-full"><label class="fl">Notes</label><textarea class="fi" id="f_notes">${esc(rec.notes)}</textarea></div>
     </div>`;
 }
 
@@ -429,9 +429,9 @@ function buildTaskFields(rec) {
   return `
     <div class="section-head">Task Details</div>
     <div class="field-grid">
-      <div class="field-full"><label class="fl">Task / Follow-Up Description</label><input class="fi" id="f_title" value="${rec.title || ''}"></div>
-      <div><label class="fl">Contact Name</label><input class="fi" id="f_contact" value="${rec.contact || ''}"></div>
-      <div><label class="fl">Phone</label><input class="fi" id="f_phone" value="${rec.phone || ''}"></div>
+      <div class="field-full"><label class="fl">Task / Follow-Up Description</label><input class="fi" id="f_title" value="${esc(rec.title)}"></div>
+      <div><label class="fl">Contact Name</label><input class="fi" id="f_contact" value="${esc(rec.contact)}"></div>
+      <div><label class="fl">Phone</label><input class="fi" id="f_phone" value="${esc(rec.phone)}"></div>
       <div><label class="fl">Due Date</label><input type="date" class="fi" id="f_due" value="${rec.due || ''}"></div>
       <div><label class="fl">Priority</label>
         <select class="fi" id="f_priority">
@@ -441,7 +441,7 @@ function buildTaskFields(rec) {
         <select class="fi" id="f_status">
           ${['Open','In Progress','Done'].map(o => `<option ${o === (rec.status || 'Open') ? 'selected' : ''}>${o}</option>`).join('')}
         </select></div>
-      <div class="field-full"><label class="fl">Notes</label><textarea class="fi" id="f_notes">${rec.notes || ''}</textarea></div>
+      <div class="field-full"><label class="fl">Notes</label><textarea class="fi" id="f_notes">${esc(rec.notes)}</textarea></div>
     </div>`;
 }
 
@@ -673,7 +673,7 @@ function _rerenderNotesList(list) {
     ? list.map((n, i) => `
       <div id="note_${i}" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:8px;position:relative">
         <div style="font-size:10.5px;color:var(--text3);margin-bottom:5px;font-family:'JetBrains Mono',monospace">${new Date(n.ts).toLocaleString()}</div>
-        <div style="font-size:13.5px;white-space:pre-wrap;line-height:1.5">${n.text.replace(/</g, '&lt;')}</div>
+        <div style="font-size:13.5px;white-space:pre-wrap;line-height:1.5">${esc(n.text)}</div>
         <button onclick="deleteNote(${i})" style="position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">✕</button>
       </div>`).join('')
     : '<div style="color:var(--text3);font-size:13px;padding:6px 0">No notes yet.</div>';
