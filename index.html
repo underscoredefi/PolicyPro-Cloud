@@ -1011,7 +1011,9 @@ function renderPeople(sec, q='') {
   if (sec === 'callers') setTimeout(() => { restoreDraft(); initQfResizer(); restoreQfPins(); }, 20);
   } catch(err) {
     console.error('renderPeople error:', err);
-    document.getElementById('content').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Render error</div><div class="empty-sub">${err.message}</div></div>`;
+    const _errEl = document.getElementById('content');
+    _errEl.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Render error</div><div class="empty-sub"></div></div>';
+    _errEl.querySelector('.empty-sub').textContent = err.message;
   }
 }
 
@@ -2695,7 +2697,7 @@ function toast(msg) {
 }
 
 // ── ESCAPE HELPER ─────────────────────────────────────────────────────────────
-function esc(v) { return (v||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function esc(v) { return (v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 // ── ADD FOLLOW-UP FROM MODAL ──────────────────────────────────────────────────
 function addFollowUp(recId, sec) {
@@ -3653,7 +3655,7 @@ document.addEventListener('keydown', e => {
   const tag = document.activeElement?.tagName;
   const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 
-  if (e.key === 'Escape') {
+  if (e.key === 'Escape' && !e.defaultPrevented) {
     if (document.getElementById('kb-hints-overlay').style.display !== 'none') { closeKbHints(); return; }
     attemptClose();
     return;

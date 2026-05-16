@@ -450,7 +450,7 @@ kbd{display:inline-flex;align-items:center;justify-content:center;min-width:28px
 .modal-close,.filter-bar .f-chip,[onclick]{cursor:pointer}
 
 /* visible focus rings for keyboard nav */
-:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:3px}
+:focus-visible:not(.fi):not(.qfi):not(.compact-input){outline:2px solid var(--gold);outline-offset:2px;border-radius:3px}
 button:focus-visible,a:focus-visible,.nav-item:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 
 /* respect prefers-reduced-motion */
