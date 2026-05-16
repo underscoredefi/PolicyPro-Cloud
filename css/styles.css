@@ -443,6 +443,25 @@ textarea.qfi{resize:vertical;min-height:72px}
 .kb-row span{flex:1}
 kbd{display:inline-flex;align-items:center;justify-content:center;min-width:28px;padding:3px 7px;background:var(--bg4);border:1px solid var(--border2);border-bottom-width:2px;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--text);white-space:nowrap}
 
+/* ── ACCESSIBILITY & INTERACTION FIXES ── */
+
+/* cursor-pointer on all clickable non-button elements */
+.stat-card,.nav-item,.f-chip,.dash-card,.g-table tbody tr,.tag,.badge,
+.modal-close,.filter-bar .f-chip,[onclick]{cursor:pointer}
+
+/* visible focus rings for keyboard nav */
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:3px}
+button:focus-visible,a:focus-visible,.nav-item:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+
+/* respect prefers-reduced-motion */
+@media(prefers-reduced-motion:reduce){
+  *,::before,::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+  }
+}
+
 /* ── AUTH / LOGIN SCREEN ── */
 .auth-screen{position:fixed;inset:0;z-index:5000;display:none;align-items:center;justify-content:center;background:radial-gradient(circle at 20% 15%,rgba(59,130,246,.16),transparent 34%),radial-gradient(circle at 85% 80%,rgba(16,185,129,.14),transparent 34%),var(--bg);padding:24px}
 .auth-card{width:100%;max-width:440px;background:rgba(18,24,40,.96);border:1px solid var(--border2);border-radius:26px;padding:34px;box-shadow:0 24px 80px rgba(0,0,0,.35)}
