@@ -107,6 +107,9 @@
     <div class="nav-item" onclick="document.getElementById('imp').click()">
       <span class="nav-icon">📥</span> Import JSON
     </div>
+    <div class="nav-item" onclick="openAutoExportSettings()">
+      <span class="nav-icon">⚙️</span> Auto Export
+    </div>
     <div class="nav-item logout-item" onclick="handleSignOut()">
       <span class="nav-icon">🚪</span> Sign Out
     </div>
@@ -294,6 +297,7 @@ async function initAuthGate() {
 }
 
 document.addEventListener('DOMContentLoaded', initAuthGate);
+document.addEventListener('DOMContentLoaded', initAutoExport);
 </script>
 
 <script>
@@ -2667,6 +2671,152 @@ function importData(e) {
     } catch { toast('❌ Invalid file'); }
   };
   r.readAsText(file); e.target.value='';
+}
+
+// ── AUTO EXPORT ───────────────────────────────────────────────────────────────
+// IndexedDB helpers — FileSystemDirectoryHandle can't live in localStorage
+function openIDB() {
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('pcrm_fs',1);
+    r.onupgradeneeded=e=>e.target.result.createObjectStore('handles');
+    r.onsuccess=e=>res(e.target.result); r.onerror=rej;
+  });
+}
+async function saveExportHandle(h){const db=await openIDB();const tx=db.transaction('handles','readwrite');tx.objectStore('handles').put(h,'autoexport_dir');return new Promise((res,rej)=>{tx.oncomplete=res;tx.onerror=rej;});}
+async function getExportHandle(){const db=await openIDB();const tx=db.transaction('handles','readonly');const r=tx.objectStore('handles').get('autoexport_dir');return new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=rej;});}
+
+async function pickExportFolder() {
+  try {
+    const h = await window.showDirectoryPicker({mode:'readwrite'});
+    await saveExportHandle(h);
+    localStorage.setItem('pcrm_autoexport_foldername', h.name);
+    const el = document.getElementById('ae_folder_name');
+    if (el) el.textContent = h.name;
+    toast('📁 Export folder set: ' + h.name);
+  } catch(e) {
+    if (e.name !== 'AbortError') toast('❌ Could not access folder');
+  }
+}
+
+async function doAutoExport() {
+  const h = await getExportHandle();
+  if (!h) { toast('⚠️ Auto-export: no folder selected'); return; }
+  try {
+    const perm = await h.queryPermission({mode:'readwrite'});
+    const granted = perm==='granted' ? true : (await h.requestPermission({mode:'readwrite'})==='granted');
+    if (!granted) { toast('⚠️ Auto-export: re-authorize folder access'); return; }
+    const data = {prospects:ld('prospects'),clients:ld('clients'),callers:ld('callers'),pipeline:ld('pipeline'),tasks:ld('tasks'),callhistory:ldCallHistory(),exported:new Date().toISOString()};
+    const fname = 'policypro-backup-'+new Date().toISOString().slice(0,10)+'.json';
+    const fh = await h.getFileHandle(fname,{create:true});
+    const w  = await fh.createWritable();
+    await w.write(JSON.stringify(data,null,2));
+    await w.close();
+    localStorage.setItem('pcrm_autoexport_last', new Date().toISOString());
+    const el = document.getElementById('ae_last_export');
+    if (el) el.textContent = new Date().toLocaleString();
+    toast('📤 Auto-backup saved → '+h.name);
+  } catch(e) {
+    console.error('Auto-export failed:', e);
+    toast('❌ Auto-export failed: '+e.message);
+  }
+}
+
+function checkAutoExport() {
+  if (localStorage.getItem('pcrm_autoexport_enabled')!=='true') return;
+  const freq = localStorage.getItem('pcrm_autoexport_freq')||'daily';
+  const last = new Date(localStorage.getItem('pcrm_autoexport_last')||0);
+  const now  = new Date();
+  let due = false;
+  if      (freq==='daily')   due = (now-last) >= 86400000;
+  else if (freq==='weekly')  due = (now-last) >= 604800000;
+  else if (freq==='monthly') {
+    const day = parseInt(localStorage.getItem('pcrm_autoexport_monthday')||'1');
+    due = now.getDate()===day && (now-last)>=72000000;
+  }
+  if (due) doAutoExport();
+}
+
+function initAutoExport() {
+  setInterval(checkAutoExport, 60000);
+  checkAutoExport();
+}
+
+function saveAutoExportSettings() {
+  const enabled = document.getElementById('ae_enabled').checked;
+  const freq    = document.getElementById('ae_freq').value;
+  const mday    = document.getElementById('ae_monthday').value;
+  localStorage.setItem('pcrm_autoexport_enabled', enabled ? 'true' : 'false');
+  localStorage.setItem('pcrm_autoexport_freq', freq);
+  localStorage.setItem('pcrm_autoexport_monthday', mday||'1');
+  const overlay = document.getElementById('ae-overlay');
+  if (overlay) overlay.remove();
+  toast(enabled ? '✅ Auto Export enabled ('+freq+')' : '⏹ Auto Export disabled');
+}
+
+function openAutoExportSettings() {
+  if (document.getElementById('ae-overlay')) return;
+  const enabled    = localStorage.getItem('pcrm_autoexport_enabled')==='true';
+  const freq       = localStorage.getItem('pcrm_autoexport_freq')||'daily';
+  const mday       = localStorage.getItem('pcrm_autoexport_monthday')||'1';
+  const folder     = localStorage.getItem('pcrm_autoexport_foldername')||'No folder selected';
+  const lastExport = localStorage.getItem('pcrm_autoexport_last');
+  const lastStr    = lastExport ? new Date(lastExport).toLocaleString() : 'Never';
+  document.body.insertAdjacentHTML('beforeend', `
+    <div class="overlay" id="ae-overlay" onclick="if(event.target.id==='ae-overlay')document.getElementById('ae-overlay').remove()">
+      <div class="modal" id="ae-modal" style="max-width:480px">
+        <div class="modal-hdr">
+          <div style="flex:1">
+            <div class="modal-name">⚙️ Auto Export</div>
+            <div class="modal-sub">Automatic scheduled backups to a local folder</div>
+          </div>
+          <div class="modal-close" onclick="document.getElementById('ae-overlay').remove()">✕</div>
+        </div>
+        <div class="modal-body" style="padding:20px 22px;display:flex;flex-direction:column;gap:18px">
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg3);border-radius:var(--r-sm);border:1px solid var(--border)">
+            <div>
+              <div style="font-weight:700;font-size:13.5px">Enable Auto Export</div>
+              <div style="font-size:11.5px;color:var(--text3);margin-top:2px">Automatically save a backup on schedule</div>
+            </div>
+            <input type="checkbox" id="ae_enabled" ${enabled?'checked':''} style="width:18px;height:18px;cursor:pointer;accent-color:var(--gold)">
+          </div>
+
+          <div>
+            <label class="fl">📁 Export Folder</label>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+              <div id="ae_folder_name" style="flex:1;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;color:var(--text2);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(folder)}</div>
+              <button class="tb-btn" onclick="pickExportFolder()" style="white-space:nowrap;flex-shrink:0">📁 Choose Folder</button>
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-top:5px">Chrome/Edge only. You'll be asked once to grant folder access.</div>
+          </div>
+
+          <div>
+            <label class="fl">Frequency</label>
+            <select class="fi" id="ae_freq" onchange="document.getElementById('ae_monthday_wrap').style.display=this.value==='monthly'?'block':'none'" style="margin-top:6px">
+              <option value="daily"   ${freq==='daily'  ?'selected':''}>Daily</option>
+              <option value="weekly"  ${freq==='weekly' ?'selected':''}>Weekly</option>
+              <option value="monthly" ${freq==='monthly'?'selected':''}>Monthly</option>
+            </select>
+          </div>
+
+          <div id="ae_monthday_wrap" style="display:${freq==='monthly'?'block':'none'}">
+            <label class="fl">Day of Month</label>
+            <input type="number" class="fi" id="ae_monthday" value="${esc(mday)}" min="1" max="31" placeholder="e.g. 1" style="margin-top:6px;width:100px">
+          </div>
+
+          <div style="padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm)">
+            <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px">Last Export</div>
+            <div id="ae_last_export" style="font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text2)">${lastStr}</div>
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px">
+            <button class="tb-btn" onclick="doAutoExport()" style="color:var(--gold);border-color:var(--gold)">📤 Export Now</button>
+            <button class="tb-btn primary" onclick="saveAutoExportSettings()">✓ Save Settings</button>
+          </div>
+
+        </div>
+      </div>
+    </div>`);
 }
 
 // ── TOAST ────────────────────────────────────────────────────────────────────
