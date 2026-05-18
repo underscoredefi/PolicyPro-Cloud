@@ -379,11 +379,8 @@ function avatarColor(n) {
 function commissionTag(r) {
   const hasChargeback = (Array.isArray(r.policies) ? r.policies : []).some(p => p.chargeback === 'Yes');
   if (hasChargeback) return `<span class="tag t-lapsed">⚠️ Chargeback</span>`;
-  if (r.commission === 'Yes') {
-    const dateStr = r.payoutDate
-      ? new Date(r.payoutDate+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})
-      : '';
-    return `<span class="tag t-inforce">✓ Received${dateStr?' · '+dateStr:''}</span>`;
+  if (parseFloat(r.payoutAmt) > 0) {
+    return `<span class="tag t-inforce">✓ Paid</span>`;
   }
   return `<span class="tag t-pending">Unpaid</span>`;
 }
@@ -2033,20 +2030,6 @@ function buildPersonFields(sec, rec) {
       <input type="hidden" id="f_noInsurance_val" value="${rec.noInsurance?'true':''}">
     </div>`, true, policyAddBtn)}
 
-    ${sec!=='callers' ? csec('commission','Commission',`
-    <div style="padding:2px 0 8px;display:flex;align-items:center;gap:16px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <label class="fl" style="margin:0">Commission Received?</label>
-        <select class="fi" id="f_commission" onchange="toggleCommissionDate()" style="width:90px">
-          ${['No','Yes'].map(o=>`<option ${o===(rec.commission||'No')?'selected':''}>${o}</option>`).join('')}
-        </select>
-      </div>
-      <div id="commission_date_wrap" style="display:${(rec.commission==='Yes')?'flex':'none'};align-items:center;gap:8px">
-        <label class="fl" style="margin:0;white-space:nowrap">Date Received</label>
-        <input type="date" class="fi" id="f_payoutDate" value="${rec.payoutDate||''}" style="width:160px" oninput="refreshSummary()">
-      </div>
-    </div>`, true) : ''}
-
     ${isClient ? csec('payout','💵 Carrier Payout',`
     <div class="field-grid" style="padding:2px 0 8px">
       <div>
@@ -2221,8 +2204,8 @@ function buildTaskFields(rec) {
 
 // Fields to persist per section
 const FIELD_KEYS = {
-  prospects: ['first','last','dob','phone','email','reason','addrStreet','addrCity','addrState','addrZip','ssn','height','weight','dl','dlstate','smoker','health','status','source','commission','notesList','policies'],
-  clients:   ['first','last','dob','phone','email','reason','addrStreet','addrCity','addrState','addrZip','ssn','height','weight','dl','dlstate','smoker','health','commission','payoutAmt','payoutDate','status','source','notesList','policies'],
+  prospects: ['first','last','dob','phone','email','reason','addrStreet','addrCity','addrState','addrZip','ssn','height','weight','dl','dlstate','smoker','health','status','source','notesList','policies'],
+  clients:   ['first','last','dob','phone','email','reason','addrStreet','addrCity','addrState','addrZip','ssn','height','weight','dl','dlstate','smoker','health','payoutAmt','payoutDate','status','source','notesList','policies'],
   callers:   ['first','last','dob','phone','email','addrStreet','addrCity','addrState','addrZip','coverage','premium','carrier','ssn','height','weight','dl','dlstate','gender','smoker','health','status','source','notes','notesList','policies','noInsurance','reason'],
   pipeline:  ['first','last','dob','phone','email','coverage','premium','carrier','product','stage','policyNum','notes'],
   tasks:     ['title','contact','phone','due','priority','status','notes'],
@@ -3031,14 +3014,6 @@ function toggleNoInsurance() {
   if (hidden)    hidden.value            = checked ? 'true' : '';
 }
 
-// ── COMMISSION DATE TOGGLE ────────────────────────────────────────────────────
-function toggleCommissionDate() {
-  const sel  = document.getElementById('f_commission');
-  const wrap = document.getElementById('commission_date_wrap');
-  if (!sel || !wrap) return;
-  wrap.style.display = sel.value === 'Yes' ? 'flex' : 'none';
-  refreshSummary();
-}
 
 // ── AI ASSISTANT ──────────────────────────────────────────────────────────────
 function toggleAIPanel() {
@@ -3206,8 +3181,7 @@ function refreshSummary() {
   const ssn     = gvs('f_ssn');
   const smoker  = gvs('f_smoker');
 
-  // ── Commission / Payout ──
-  const commission = gvs('f_commission');
+  // ── Payout ──
   const payoutAmt  = gvs('f_payoutAmt');
   const payoutDate = gvs('f_payoutDate');
 
