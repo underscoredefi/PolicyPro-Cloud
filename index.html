@@ -297,7 +297,6 @@ async function initAuthGate() {
   client.auth.onAuthStateChange((_event, session) => setAuthState(!!session));
 }
 
-document.addEventListener('DOMContentLoaded', migratePayoutAmtToPolicy);
 document.addEventListener('DOMContentLoaded', initAuthGate);
 document.addEventListener('DOMContentLoaded', initAutoExport);
 document.addEventListener('DOMContentLoaded', applySidebarState);
@@ -3848,6 +3847,7 @@ applyTheme();
 seed();
 updateCounts();
 renderCurrent();
+migratePayoutAmtToPolicy();
 </script>
 </body>
 </html>
