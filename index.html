@@ -297,6 +297,7 @@ async function initAuthGate() {
   client.auth.onAuthStateChange((_event, session) => setAuthState(!!session));
 }
 
+document.addEventListener('DOMContentLoaded', migratePayoutAmtToPolicy);
 document.addEventListener('DOMContentLoaded', initAuthGate);
 document.addEventListener('DOMContentLoaded', initAutoExport);
 document.addEventListener('DOMContentLoaded', applySidebarState);
@@ -312,6 +313,30 @@ function toggleSidebar() {
   btn.textContent = collapsed ? '›' : '‹';
   btn.title       = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
 }
+// ── ONE-TIME MIGRATION: move record-level payoutAmt into first policy ──────────
+function migratePayoutAmtToPolicy() {
+  if (localStorage.getItem('pcrm_payout_migrated') === '1') return;
+  try {
+    const clients = JSON.parse(localStorage.getItem('pcrm_clients') || '[]');
+    let changed = false;
+    clients.forEach(r => {
+      if (!r.payoutAmt || parseFloat(r.payoutAmt) <= 0) return;
+      if (Array.isArray(r.policies) && r.policies.length) {
+        // Only migrate if no policy already has a payoutAmt
+        const alreadySet = r.policies.some(p => parseFloat(p.payoutAmt) > 0);
+        if (!alreadySet) {
+          r.policies[0].payoutAmt = r.payoutAmt;
+          changed = true;
+        }
+      }
+      delete r.payoutAmt;
+      changed = true;
+    });
+    if (changed) localStorage.setItem('pcrm_clients', JSON.stringify(clients));
+    localStorage.setItem('pcrm_payout_migrated', '1');
+  } catch(e) { console.warn('payout migration failed:', e); }
+}
+
 function applySidebarState() {
   if (localStorage.getItem('pcrm_sidebar_collapsed') === '1') {
     const s   = document.getElementById('sidebar');
@@ -404,8 +429,7 @@ function commissionTag(r) {
   const hasChargeback = (Array.isArray(r.policies) ? r.policies : []).some(p => p.chargeback === 'Yes');
   if (hasChargeback) return `<span class="tag t-lapsed">⚠️ Chargeback</span>`;
   const paidViaPolicies = Array.isArray(r.policies) && r.policies.some(p => parseFloat(p.payoutAmt) > 0);
-  const paidViaRecord   = parseFloat(r.payoutAmt) > 0;
-  if (paidViaPolicies || paidViaRecord) return `<span class="tag t-inforce">✓ Paid</span>`;
+  if (paidViaPolicies) return `<span class="tag t-inforce">✓ Paid</span>`;
   return `<span class="tag t-pending">Unpaid</span>`;
 }
 
@@ -1256,10 +1280,10 @@ function renderDashboard() {
   const yearPrem    = cls.reduce((a,r)=>a+annPremInRange(r,yStart,yEnd),0);
   const allTimePrem = cls.reduce((a,r)=>a+annPrem(r),0);
 
-  // Total payout received — sum per-policy payoutAmt; fall back to record-level for legacy data
+  // Total payout received — per-policy payoutAmt only (no record-level fallback)
   const totalPayout= cls.reduce((a,r)=>{
     const perPol = Array.isArray(r.policies) ? r.policies.reduce((s,p)=>s+(parseFloat(p.payoutAmt)||0),0) : 0;
-    return a + (perPol > 0 ? perPol : (parseFloat(r.payoutAmt)||0));
+    return a + perPol;
   },0);
 
   // Ann. Premium Sold — from sold policies using annualPremium field (clients: soldDate; prospects: sold=true)
