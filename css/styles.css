@@ -151,10 +151,10 @@ html.light #topbar{background:rgba(255,255,255,0.85)}
 
 /* ── STATS ── */
 .stats-row{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:24px}
-.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;position:relative;overflow:hidden;transition:var(--transition);flex:1;min-width:160px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;position:relative;overflow:visible;transition:var(--transition);flex:1;min-width:160px}
 .stat-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
-.stat-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px}
-.stat-card::after{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s}
+.stat-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;border-radius:var(--r) 0 0 var(--r)}
+.stat-card::after{content:'';position:absolute;inset:0;opacity:0;transition:opacity .3s;border-radius:var(--r);pointer-events:none}
 .stat-card:hover::after{opacity:1}
 .stat-card.gold{background:linear-gradient(135deg,rgba(240,180,41,0.10) 0%,var(--bg2) 55%);border-color:rgba(240,180,41,0.22)}
 .stat-card.gold::before{background:linear-gradient(180deg,#f0b429,#c8860a);box-shadow:2px 0 12px rgba(240,180,41,0.4)}
