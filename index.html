@@ -1299,7 +1299,8 @@ function renderDashboard() {
         ? r.policies
         : [{premium: r.premium||0, annualPremium: r.annualPremium||'', soldDate: r.soldDate||r.created, carrier: r.carrier, product: r.product}];
       pols.forEach(p => {
-        const d = p.soldDate ? new Date(p.soldDate+'T12:00:00') : (r.soldDate ? new Date(r.soldDate+'T12:00:00') : new Date(r.created||''));
+        const _sd = p.soldDate||r.soldDate||r.created||'';
+        const d = _sd ? (_sd.length > 10 ? new Date(_sd) : new Date(_sd+'T12:00:00')) : new Date('');
         const ann = polAnn(p);
         if (d >= s && d <= e && ann > 0) {
           rows.push({
