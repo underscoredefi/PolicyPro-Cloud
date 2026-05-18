@@ -56,14 +56,15 @@
       <div class="logo-name">Policy<em>Pro</em></div>
       <div class="logo-sub">Life Insurance CRM</div>
     </div>
+    <div class="sidebar-collapse-btn" id="sidebar-collapse-btn" onclick="toggleSidebar()" title="Collapse sidebar">‹</div>
   </div>
 
   <div class="sidebar-section">
-    <div class="nav-item" onclick="go('callers')" id="nav-callers">
+    <div class="nav-item" onclick="go('callers')" id="nav-callers" title="Incoming Calls">
       <span class="nav-icon">📞</span> Incoming Calls
       <span class="nav-count" id="cnt-callers">0</span>
     </div>
-    <div class="nav-item" onclick="go('callhistory')" id="nav-callhistory">
+    <div class="nav-item" onclick="go('callhistory')" id="nav-callhistory" title="Call History">
       <span class="nav-icon">📅</span> Call History
       <span class="nav-count" id="cnt-callhistory">0</span>
     </div>
@@ -72,15 +73,15 @@
   <div class="sidebar-div"></div>
 
   <div class="sidebar-section">
-    <div class="nav-item active" onclick="go('prospects')" id="nav-prospects">
+    <div class="nav-item active" onclick="go('prospects')" id="nav-prospects" title="Prospects">
       <span class="nav-icon">👥</span> Prospects
       <span class="nav-count" id="cnt-prospects">0</span>
     </div>
-    <div class="nav-item" onclick="go('clients')" id="nav-clients">
+    <div class="nav-item" onclick="go('clients')" id="nav-clients" title="Active Clients">
       <span class="nav-icon">🛡</span> Active Clients
       <span class="nav-count" id="cnt-clients">0</span>
     </div>
-    <div class="nav-item" onclick="go('dashboard')" id="nav-dashboard">
+    <div class="nav-item" onclick="go('dashboard')" id="nav-dashboard" title="Dashboard">
       <span class="nav-icon">📊</span> Dashboard
     </div>
   </div>
@@ -88,11 +89,11 @@
   <div class="sidebar-div"></div>
 
   <div class="sidebar-section">
-    <div class="nav-item" onclick="go('tasks')" id="nav-tasks">
+    <div class="nav-item" onclick="go('tasks')" id="nav-tasks" title="Follow-Ups">
       <span class="nav-icon">✅</span> Follow-Ups
       <span class="nav-count" id="cnt-tasks">0</span>
     </div>
-    <div class="nav-item" onclick="go('chargebacks')" id="nav-chargebacks">
+    <div class="nav-item" onclick="go('chargebacks')" id="nav-chargebacks" title="Chargebacks">
       <span class="nav-icon">⚠️</span> Chargebacks
       <span class="nav-count" id="cnt-chargebacks">0</span>
     </div>
@@ -101,16 +102,16 @@
   <div class="sidebar-div"></div>
 
   <div class="sidebar-section">
-    <div class="nav-item" onclick="exportData()">
+    <div class="nav-item" onclick="exportData()" title="Export JSON">
       <span class="nav-icon">📤</span> Export JSON
     </div>
-    <div class="nav-item" onclick="document.getElementById('imp').click()">
+    <div class="nav-item" onclick="document.getElementById('imp').click()" title="Import JSON">
       <span class="nav-icon">📥</span> Import JSON
     </div>
-    <div class="nav-item" onclick="openAutoExportSettings()">
+    <div class="nav-item" onclick="openAutoExportSettings()" title="Auto Export">
       <span class="nav-icon">⚙️</span> Auto Export
     </div>
-    <div class="nav-item logout-item" onclick="handleSignOut()">
+    <div class="nav-item logout-item" onclick="handleSignOut()" title="Sign Out">
       <span class="nav-icon">🚪</span> Sign Out
     </div>
   </div>
@@ -298,9 +299,28 @@ async function initAuthGate() {
 
 document.addEventListener('DOMContentLoaded', initAuthGate);
 document.addEventListener('DOMContentLoaded', initAutoExport);
+document.addEventListener('DOMContentLoaded', applySidebarState);
 </script>
 
 <script>
+// ── SIDEBAR COLLAPSE ──────────────────────────────────────────────────────────
+function toggleSidebar() {
+  const s   = document.getElementById('sidebar');
+  const btn = document.getElementById('sidebar-collapse-btn');
+  const collapsed = s.classList.toggle('collapsed');
+  localStorage.setItem('pcrm_sidebar_collapsed', collapsed ? '1' : '0');
+  btn.textContent = collapsed ? '›' : '‹';
+  btn.title       = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+}
+function applySidebarState() {
+  if (localStorage.getItem('pcrm_sidebar_collapsed') === '1') {
+    const s   = document.getElementById('sidebar');
+    const btn = document.getElementById('sidebar-collapse-btn');
+    if (s)   s.classList.add('collapsed');
+    if (btn) { btn.textContent = '›'; btn.title = 'Expand sidebar'; }
+  }
+}
+
 // ── THEME ─────────────────────────────────────────────────────────────────────
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
