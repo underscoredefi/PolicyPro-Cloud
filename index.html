@@ -379,9 +379,9 @@ function avatarColor(n) {
 function commissionTag(r) {
   const hasChargeback = (Array.isArray(r.policies) ? r.policies : []).some(p => p.chargeback === 'Yes');
   if (hasChargeback) return `<span class="tag t-lapsed">⚠️ Chargeback</span>`;
-  if (parseFloat(r.payoutAmt) > 0) {
-    return `<span class="tag t-inforce">✓ Paid</span>`;
-  }
+  const paidViaPolicies = Array.isArray(r.policies) && r.policies.some(p => parseFloat(p.payoutAmt) > 0);
+  const paidViaRecord   = parseFloat(r.payoutAmt) > 0;
+  if (paidViaPolicies || paidViaRecord) return `<span class="tag t-inforce">✓ Paid</span>`;
   return `<span class="tag t-pending">Unpaid</span>`;
 }
 
@@ -1232,8 +1232,11 @@ function renderDashboard() {
   const yearPrem    = cls.reduce((a,r)=>a+annPremInRange(r,yStart,yEnd),0);
   const allTimePrem = cls.reduce((a,r)=>a+annPrem(r),0);
 
-  // Total payout received
-  const totalPayout= cls.reduce((a,r)=>a+(parseFloat(r.payoutAmt)||0),0);
+  // Total payout received — sum per-policy payoutAmt; fall back to record-level for legacy data
+  const totalPayout= cls.reduce((a,r)=>{
+    const perPol = Array.isArray(r.policies) ? r.policies.reduce((s,p)=>s+(parseFloat(p.payoutAmt)||0),0) : 0;
+    return a + (perPol > 0 ? perPol : (parseFloat(r.payoutAmt)||0));
+  },0);
 
   // Ann. Premium Sold — from sold policies using annualPremium field (clients: soldDate; prospects: sold=true)
   const soldAnnPrem = (recs, requireSoldDate) => recs.reduce((a,r) => {
@@ -1941,6 +1944,10 @@ function buildPersonFields(sec, rec) {
           <div><label class="fl">📅 Policy Sold Date</label>
             <input type="date" class="fi" data-pol="${i}" data-key="soldDate" value="${p.soldDate||''}" oninput="updatePolicyField(${i},'soldDate',this.value)">
           </div>
+          ${isClient?`<div><label class="fl">💵 Carrier Payout Amount</label>
+            <div class="prefix-wrap"><span class="prefix">$</span>
+            <input class="fi" data-pol="${i}" data-key="payoutAmt" value="${esc(p.payoutAmt)}" placeholder="e.g. 450.00" oninput="updatePolicyField(${i},'payoutAmt',this.value)">
+            </div></div>`:''}
           <div><label class="fl">📅 Effective Date <span style="font-size:9.5px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0">(First Payment Date)</span></label>
             <input type="date" class="fi" data-pol="${i}" data-key="effectiveDate" value="${p.effectiveDate||''}" oninput="updatePolicyField(${i},'effectiveDate',this.value)">
           </div>
@@ -2029,17 +2036,6 @@ function buildPersonFields(sec, rec) {
       <input type="hidden" id="f_policies" value="${esc(JSON.stringify(policies))}">
       <input type="hidden" id="f_noInsurance_val" value="${rec.noInsurance?'true':''}">
     </div>`, true, policyAddBtn)}
-
-    ${isClient ? csec('payout','💵 Carrier Payout',`
-    <div class="field-grid" style="padding:2px 0 8px">
-      <div>
-        <label class="fl">Payout Amount Received
-          <span id="f_payout_pct_badge" style="margin-left:8px;font-size:10.5px;font-weight:600;text-transform:none;letter-spacing:0;font-family:'JetBrains Mono',monospace;padding:1px 7px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;${(()=>{const pols=Array.isArray(rec.policies)?rec.policies:[{premium:rec.premium}];const yr=pols.reduce((a,p)=>(parseFloat(p.premium)||0)*12+a,0);const po=parseFloat(rec.payoutAmt)||0;if(yr&&po){const pct=Math.round(po/yr*100);return pct>=100?'background:var(--green-soft);border:1px solid var(--green);color:var(--green)':'background:var(--gold-soft);border:1px solid var(--border);color:var(--gold)';}return 'background:var(--bg4);border:1px solid var(--border);color:var(--text3)'})()}">${(()=>{const pols=Array.isArray(rec.policies)?rec.policies:[{premium:rec.premium}];const yr=pols.reduce((a,p)=>(parseFloat(p.premium)||0)*12+a,0);const po=parseFloat(rec.payoutAmt)||0;if(yr&&po)return Math.round(po/yr*100)+'% of annual';return yr?'—':'—'})()}</span>
-        </label>
-        <div class="prefix-wrap"><span class="prefix">$</span>
-        <input class="fi" id="f_payoutAmt" value="${esc(rec.payoutAmt)}" placeholder="e.g. 450.00" oninput="refreshSummary();updatePayoutPct()"></div>
-      </div>
-    </div>`, true) : ''}
 
     ${csec('physical','Physical Details',`
     <div class="field-grid" style="padding:2px 0 8px">
@@ -2205,7 +2201,7 @@ function buildTaskFields(rec) {
 // Fields to persist per section
 const FIELD_KEYS = {
   prospects: ['first','last','dob','phone','email','reason','addrStreet','addrCity','addrState','addrZip','ssn','height','weight','dl','dlstate','smoker','health','status','source','notesList','policies'],
-  clients:   ['first','last','dob','phone','email','reason','addrStreet','addrCity','addrState','addrZip','ssn','height','weight','dl','dlstate','smoker','health','payoutAmt','payoutDate','status','source','notesList','policies'],
+  clients:   ['first','last','dob','phone','email','reason','addrStreet','addrCity','addrState','addrZip','ssn','height','weight','dl','dlstate','smoker','health','status','source','notesList','policies'],
   callers:   ['first','last','dob','phone','email','addrStreet','addrCity','addrState','addrZip','coverage','premium','carrier','ssn','height','weight','dl','dlstate','gender','smoker','health','status','source','notes','notesList','policies','noInsurance','reason'],
   pipeline:  ['first','last','dob','phone','email','coverage','premium','carrier','product','stage','policyNum','notes'],
   tasks:     ['title','contact','phone','due','priority','status','notes'],
@@ -2884,6 +2880,10 @@ function rerenderPolicies() {
         <div><label class="fl">📅 Policy Sold Date</label>
           <input type="date" class="fi" value="${p.soldDate||''}" oninput="updatePolicyField(${i},'soldDate',this.value)">
         </div>
+        ${isClient?`<div><label class="fl">💵 Carrier Payout Amount</label>
+          <div class="prefix-wrap"><span class="prefix">$</span>
+          <input class="fi" value="${esc(p.payoutAmt)}" placeholder="e.g. 450.00" oninput="updatePolicyField(${i},'payoutAmt',this.value)">
+          </div></div>`:''}
         <div><label class="fl">📅 Effective Date <span style="font-size:9.5px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0">(First Payment Date)</span></label>
           <input type="date" class="fi" value="${p.effectiveDate||''}" oninput="updatePolicyField(${i},'effectiveDate',this.value)">
         </div>
@@ -2904,7 +2904,7 @@ function rerenderPolicies() {
 }
 function addPolicy() {
   const pols = getPolicies();
-  pols.push({id:uid(), coverage:'', premium:'', annualPremium:'', carrier:'', product:'', policyNum:'', beneficiary:'', soldDate:'', effectiveDate:'', chargeback:'', chargebackAmt:''});
+  pols.push({id:uid(), coverage:'', premium:'', annualPremium:'', carrier:'', product:'', policyNum:'', beneficiary:'', soldDate:'', effectiveDate:'', payoutAmt:'', chargeback:'', chargebackAmt:''});
   setPolicies(pols);
   rerenderPolicies();
   setTimeout(() => {
