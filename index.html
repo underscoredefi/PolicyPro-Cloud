@@ -2669,7 +2669,7 @@ function copyQuickSummary() {
 
 // ── EXPORT / IMPORT ───────────────────────────────────────────────────────────
 function exportData() {
-  const all={prospects:ld('prospects'),clients:ld('clients'),callers:ld('callers'),pipeline:ld('pipeline'),tasks:ld('tasks'),exported:new Date().toISOString()};
+  const all={prospects:ld('prospects'),clients:ld('clients'),callers:ld('callers'),pipeline:ld('pipeline'),tasks:ld('tasks'),callhistory:ldCallHistory(),exported:new Date().toISOString()};
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(all,null,2)],{type:'application/json'}));
   a.download='policypro-backup-'+Date.now()+'.json'; a.click();
@@ -2682,6 +2682,7 @@ function importData(e) {
     try {
       const d=JSON.parse(ev.target.result);
       ['prospects','clients','callers','pipeline','tasks'].forEach(k=>{ if(d[k]) sv(k,d[k]); });
+      if(d.callhistory) svCallHistory(d.callhistory);
       renderCurrent(); updateCounts(); toast('📥 Import complete');
     } catch { toast('❌ Invalid file'); }
   };
