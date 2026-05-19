@@ -1,0 +1,5 @@
+name = "policypro-cloud"
+pages_build_output_dir = "."
+
+[env.production]
+name = "policypro-cloud"
