@@ -119,6 +119,10 @@
   <input type="file" id="imp" accept=".json" style="display:none" onchange="importData(event)">
 
   <div class="sidebar-footer">
+    <div class="nav-item version-badge-item" onclick="openUpdateLog()" title="View update history">
+      <span class="nav-icon">🚀</span><span class="nav-label"> Version</span>
+      <span class="nav-count version-chip" id="version-chip">v1.0</span>
+    </div>
     <div class="theme-toggle" onclick="toggleTheme()" title="Switch theme">
       <div class="theme-toggle-label">
         <span id="theme-icon">🌙</span>
@@ -303,6 +307,109 @@ document.addEventListener('DOMContentLoaded', applySidebarState);
 </script>
 
 <script>
+// ── VERSION & CHANGELOG ───────────────────────────────────────────────────────
+const APP_VERSION = 'v1.0';
+const CHANGELOG = [
+  {
+    version: 'v1.0',
+    date: '2026-05-19',
+    title: 'Version Tracking & Update Log',
+    changes: [
+      'Added "What\'s New" popup that appears automatically after each update',
+      'New version badge in the sidebar showing the current version number',
+      'Scrollable update log with full version history — click the version badge to open',
+    ]
+  }
+  // Prepend new entries here when releasing future updates
+];
+
+function checkForUpdate() {
+  const seen = localStorage.getItem('pp_last_seen_version');
+  if (seen !== APP_VERSION) showWhatsNew();
+}
+
+function showWhatsNew() {
+  const latest = CHANGELOG[0];
+  const el = document.createElement('div');
+  el.className = 'update-overlay';
+  el.id = 'whats-new-overlay';
+  el.innerHTML = `
+    <div class="update-modal">
+      <div class="update-modal-hdr">
+        <div class="update-modal-icon">🚀</div>
+        <div>
+          <div class="update-modal-title">What's New</div>
+          <div class="update-modal-sub">${latest.version} &nbsp;·&nbsp; ${latest.date}</div>
+        </div>
+        <div class="update-modal-close" onclick="dismissWhatsNew()">✕</div>
+      </div>
+      <div class="update-modal-body">
+        <div class="update-entry">
+          <div class="update-entry-title">${latest.title}</div>
+          <ul class="update-change-list">
+            ${latest.changes.map(c=>`<li>${c}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+      <div class="update-modal-foot">
+        <button class="tb-btn" onclick="openUpdateLogFromNew()">View All Updates</button>
+        <button class="tb-btn primary" onclick="dismissWhatsNew()">Got it</button>
+      </div>
+    </div>`;
+  el.addEventListener('click', e => { if (e.target === el) dismissWhatsNew(); });
+  document.body.appendChild(el);
+}
+
+function dismissWhatsNew() {
+  const el = document.getElementById('whats-new-overlay');
+  if (el) el.remove();
+  localStorage.setItem('pp_last_seen_version', APP_VERSION);
+}
+
+function openUpdateLogFromNew() {
+  dismissWhatsNew();
+  openUpdateLog();
+}
+
+function openUpdateLog() {
+  const el = document.createElement('div');
+  el.className = 'update-overlay';
+  el.id = 'update-log-overlay';
+  const entries = CHANGELOG.map(entry => `
+    <div class="update-entry">
+      <div class="update-entry-hdr">
+        <span class="update-ver-pill">${entry.version}</span>
+        <span class="update-date">${entry.date}</span>
+      </div>
+      <div class="update-entry-title">${entry.title}</div>
+      <ul class="update-change-list">
+        ${entry.changes.map(c=>`<li>${c}</li>`).join('')}
+      </ul>
+    </div>`).join('');
+  el.innerHTML = `
+    <div class="update-modal" style="width:520px;max-height:80vh">
+      <div class="update-modal-hdr">
+        <div class="update-modal-icon">📋</div>
+        <div>
+          <div class="update-modal-title">Update History</div>
+          <div class="update-modal-sub">Current: ${APP_VERSION}</div>
+        </div>
+        <div class="update-modal-close" onclick="closeUpdateLog()">✕</div>
+      </div>
+      <div class="update-modal-body">${entries}</div>
+      <div class="update-modal-foot">
+        <button class="tb-btn primary" onclick="closeUpdateLog()">Close</button>
+      </div>
+    </div>`;
+  el.addEventListener('click', e => { if (e.target === el) closeUpdateLog(); });
+  document.body.appendChild(el);
+}
+
+function closeUpdateLog() {
+  const el = document.getElementById('update-log-overlay');
+  if (el) el.remove();
+}
+
 // ── SIDEBAR COLLAPSE ──────────────────────────────────────────────────────────
 function toggleSidebar() {
   const s   = document.getElementById('sidebar');
@@ -3844,10 +3951,12 @@ document.addEventListener('keydown', e => {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 applyTheme();
+document.getElementById('version-chip').textContent = APP_VERSION;
 seed();
 updateCounts();
 renderCurrent();
 migratePayoutAmtToPolicy();
+checkForUpdate();
 </script>
 </body>
 </html>
