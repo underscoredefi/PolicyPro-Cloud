@@ -247,9 +247,15 @@ function setAuthState(signedIn) {
   document.body.classList.add(signedIn ? 'authenticated' : 'signed-out');
   if (signedIn) {
     loadFromCloud().then(() => {
+      seed();
       updateCounts();
       renderCurrent();
-    }).catch(err => console.error('Failed to load cloud data:', err));
+    }).catch(err => {
+      console.error('Failed to load cloud data:', err);
+      seed();
+      updateCounts();
+      renderCurrent();
+    });
   }
 }
 
@@ -3958,9 +3964,6 @@ document.addEventListener('keydown', e => {
 // ── INIT ──────────────────────────────────────────────────────────────────────
 applyTheme();
 document.getElementById('version-chip').textContent = APP_VERSION;
-seed();
-updateCounts();
-renderCurrent();
 migratePayoutAmtToPolicy();
 checkForUpdate();
 </script>
