@@ -560,28 +560,31 @@ function sTag(s) {
   return `<span class="tag t-${map[s]||'cold'}">${s||'—'}</span>`;
 }
 
-// ── SEED DATA ────────────────────────────────────────────────────────────────
+// ── SEED DATA (cache-only — never writes to Supabase) ────────────────────────
+function _cacheOnly(section, records) {
+  if (!ld(section).length) _cache[section] = records;
+}
 function seed() {
-  if (!ld('prospects').length) sv('prospects',[
+  _cacheOnly('prospects',[
     {id:uid(),first:'Sandra',last:'Martinez',dob:'1968-03-14',phone:'(813) 555-0192',email:'smartinez@gmail.com',address:'Tampa, FL',coverage:'250000',premium:'187',carrier:'MetLife',status:'Hot',source:'Referral',product:'Whole Life',smoker:'No',health:'Good',beneficiary:'Roberto Martinez',notes:'Called about converting term. Very interested.',created:new Date().toISOString()},
     {id:uid(),first:'DeShawn',last:'Jackson',dob:'1982-07-29',phone:'(727) 555-0341',email:'djackson@outlook.com',address:'Clearwater, FL',coverage:'500000',premium:'312',carrier:'Prudential',status:'Warm',source:'Website',product:'Term 20',smoker:'No',health:'Excellent',beneficiary:'Keisha Jackson',notes:'Currently has group life at work. Needs supplemental.',created:new Date().toISOString()},
     {id:uid(),first:'Patricia',last:'Owens',dob:'1955-11-05',phone:'(813) 555-0877',email:'powens@yahoo.com',address:'Brandon, FL',coverage:'100000',premium:'421',carrier:'Mutual of Omaha',status:'Hot',source:'Cold Call',product:'Final Expense',smoker:'Former',health:'Fair',beneficiary:'David Owens',notes:'Interested in final expense policy. On fixed income.',created:new Date().toISOString()},
     {id:uid(),first:'Carlos',last:'Rivera',dob:'1990-05-18',phone:'(407) 555-0255',email:'crivera@work.com',address:'Orlando, FL',coverage:'',premium:'',carrier:'None',status:'Cold',source:'LinkedIn',product:'',smoker:'No',health:'Excellent',beneficiary:'',notes:'Young family, just bought a house.',created:new Date().toISOString()},
     {id:uid(),first:'Dorothy',last:'Thompson',dob:'1949-09-22',phone:'(813) 555-0614',email:'',address:'Tampa, FL',coverage:'50000',premium:'198',carrier:'Globe Life',status:'Warm',source:'Referral',product:'Final Expense',smoker:'No',health:'Fair',beneficiary:'Michael Thompson',notes:'Globe Life policy may be insufficient. Reviewing options.',created:new Date().toISOString()},
   ]);
-  if (!ld('clients').length) sv('clients',[
+  _cacheOnly('clients',[
     {id:uid(),first:'James',last:'Whitfield',dob:'1962-04-10',phone:'(813) 555-0100',email:'jwhitfield@email.com',address:'Tampa, FL',coverage:'300000',premium:'215',carrier:'Lincoln National',status:'In Force',source:'Referral',product:'Universal Life',smoker:'No',health:'Good',beneficiary:'Carol Whitfield',policyNum:'LN-2021-88234',issueDate:'2021-06-01',notes:'Annual review due in June.',created:new Date().toISOString()},
     {id:uid(),first:'Angela',last:'Brooks',dob:'1975-08-15',phone:'(727) 555-0229',email:'abrooks@mail.com',address:'St. Pete, FL',coverage:'500000',premium:'178',carrier:'Pacific Life',status:'In Force',source:'Event',product:'Term 30',smoker:'No',health:'Excellent',beneficiary:'Marcus Brooks',policyNum:'PL-2022-14456',issueDate:'2022-03-15',notes:'',created:new Date().toISOString()},
   ]);
-  if (!ld('callers').length) sv('callers',[
+  _cacheOnly('callers',[
     {id:uid(),first:'Unknown',last:'Caller',dob:'',phone:'(813) 555-0000',email:'',address:'',coverage:'',premium:'',carrier:'',status:'New',source:'Inbound Call',product:'',smoker:'',health:'',beneficiary:'',notes:'Called at 10:32am asking about final expense options.',created:new Date().toISOString()},
   ]);
-  if (!ld('pipeline').length) sv('pipeline',[
+  _cacheOnly('pipeline',[
     {id:uid(),first:'Sandra',last:'Martinez',dob:'1968-03-14',phone:'(813) 555-0192',email:'smartinez@gmail.com',coverage:'250000',premium:'187',carrier:'MetLife',stage:'Submitted',product:'Whole Life',policyNum:'',notes:'Awaiting underwriting.',created:new Date().toISOString()},
     {id:uid(),first:'James',last:'Whitfield',dob:'1962-04-10',phone:'(813) 555-0100',email:'jwhitfield@email.com',coverage:'300000',premium:'215',carrier:'Lincoln National',stage:'Approved',product:'Universal Life',policyNum:'LN-2021-88234',notes:'Policy delivered.',created:new Date().toISOString()},
     {id:uid(),first:'Patricia',last:'Owens',dob:'1955-11-05',phone:'(813) 555-0877',email:'powens@yahoo.com',coverage:'100000',premium:'421',carrier:'Mutual of Omaha',stage:'Pending',product:'Final Expense',policyNum:'',notes:'Medical records requested.',created:new Date().toISOString()},
   ]);
-  if (!ld('tasks').length) sv('tasks',[
+  _cacheOnly('tasks',[
     {id:uid(),title:'Follow up — Sandra Martinez re: Whole Life quote',contact:'Sandra Martinez',phone:'(813) 555-0192',due:'2025-08-25',priority:'High',status:'Open',notes:''},
     {id:uid(),title:'Send final expense comparison — Patricia Owens',contact:'Patricia Owens',phone:'(813) 555-0877',due:'2025-08-22',priority:'High',status:'Open',notes:''},
     {id:uid(),title:'Annual policy review — James Whitfield',contact:'James Whitfield',phone:'(813) 555-0100',due:'2025-09-01',priority:'Medium',status:'Open',notes:''},
