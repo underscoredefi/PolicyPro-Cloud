@@ -245,6 +245,12 @@ function showAuthMessage(message, type='err') {
 function setAuthState(signedIn) {
   document.body.classList.remove('auth-pending', 'signed-out', 'authenticated');
   document.body.classList.add(signedIn ? 'authenticated' : 'signed-out');
+  if (signedIn) {
+    loadFromCloud().then(() => {
+      updateCounts();
+      renderCurrent();
+    }).catch(err => console.error('Failed to load cloud data:', err));
+  }
 }
 
 async function handleAuthSubmit(e) {
