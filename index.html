@@ -2119,14 +2119,14 @@ function buildPersonFields(sec, rec) {
           </div>
           ${isClient?`<div><label class="fl">💵 Carrier Payout Amount</label>
             <div class="prefix-wrap"><span class="prefix">$</span>
-            <input class="fi" data-pol="${i}" data-key="payoutAmt" value="${esc(p.payoutAmt)}" placeholder="e.g. 450.00" oninput="updatePolicyField(${i},'payoutAmt',this.value);rerenderPolicies()">
+            <input class="fi" data-pol="${i}" data-key="payoutAmt" value="${esc(p.payoutAmt)}" placeholder="e.g. 450.00" oninput="updatePolicyField(${i},'payoutAmt',this.value);updateBackendPayDisplay(${i},this.value)">
             </div></div>
           <div><label class="fl">📅 Date Paid by Carrier</label>
             <input type="date" class="fi" data-pol="${i}" data-key="payoutDate" value="${p.payoutDate||''}" oninput="updatePolicyField(${i},'payoutDate',this.value)">
           </div>
-          <div><label class="fl">📊 Expected Backend Pay <span style="font-size:9.5px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0">(auto)</span></label>
+          <div><label class="fl" style="display:flex;align-items:center;justify-content:space-between">📊 Expected Backend Pay <span onclick="toggleBackendPay()" id="bp-toggle-label" style="cursor:pointer;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid ${getBackendPayEnabled()?'var(--green)':'var(--border2)'};color:${getBackendPayEnabled()?'var(--green)':'var(--text3)'};background:${getBackendPayEnabled()?'var(--green-soft)':'var(--bg4)'};letter-spacing:.5px;text-transform:uppercase">${getBackendPayEnabled()?'ON':'OFF'}</span></label>
             <div class="prefix-wrap"><span class="prefix">$</span>
-            <input class="fi" value="${p.payoutAmt ? (parseFloat(p.payoutAmt)/3).toFixed(2) : ''}" placeholder="—" readonly style="opacity:.7;cursor:default">
+            <input class="fi" data-bp="${i}" value="${getBackendPayEnabled() && p.payoutAmt ? (parseFloat(p.payoutAmt)/3).toFixed(2) : ''}" placeholder="—" readonly style="opacity:.7;cursor:default">
             </div></div>`:''}
           <div><label class="fl">📅 Effective Date <span style="font-size:9.5px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0">(First Payment Date)</span></label>
             <input type="date" class="fi" data-pol="${i}" data-key="effectiveDate" value="${p.effectiveDate||''}" oninput="updatePolicyField(${i},'effectiveDate',this.value)">
@@ -3208,14 +3208,14 @@ function rerenderPolicies() {
         </div>
         ${isClient?`<div><label class="fl">💵 Carrier Payout Amount</label>
           <div class="prefix-wrap"><span class="prefix">$</span>
-          <input class="fi" value="${esc(p.payoutAmt)}" placeholder="e.g. 450.00" oninput="updatePolicyField(${i},'payoutAmt',this.value);rerenderPolicies()">
+          <input class="fi" value="${esc(p.payoutAmt)}" placeholder="e.g. 450.00" oninput="updatePolicyField(${i},'payoutAmt',this.value);updateBackendPayDisplay(${i},this.value)">
           </div></div>
         <div><label class="fl">📅 Date Paid by Carrier</label>
           <input type="date" class="fi" value="${p.payoutDate||''}" oninput="updatePolicyField(${i},'payoutDate',this.value)">
         </div>
-        <div><label class="fl">📊 Expected Backend Pay <span style="font-size:9.5px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0">(auto)</span></label>
+        <div><label class="fl" style="display:flex;align-items:center;justify-content:space-between">📊 Expected Backend Pay <span onclick="toggleBackendPay()" id="bp-toggle-label" style="cursor:pointer;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid ${getBackendPayEnabled()?'var(--green)':'var(--border2)'};color:${getBackendPayEnabled()?'var(--green)':'var(--text3)'};background:${getBackendPayEnabled()?'var(--green-soft)':'var(--bg4)'};letter-spacing:.5px;text-transform:uppercase">${getBackendPayEnabled()?'ON':'OFF'}</span></label>
           <div class="prefix-wrap"><span class="prefix">$</span>
-          <input class="fi" value="${p.payoutAmt ? (parseFloat(p.payoutAmt)/3).toFixed(2) : ''}" placeholder="—" readonly style="opacity:.7;cursor:default">
+          <input class="fi" data-bp="${i}" value="${getBackendPayEnabled() && p.payoutAmt ? (parseFloat(p.payoutAmt)/3).toFixed(2) : ''}" placeholder="—" readonly style="opacity:.7;cursor:default">
           </div></div>`:''}
         <div><label class="fl">📅 Effective Date <span style="font-size:9.5px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0">(First Payment Date)</span></label>
           <input type="date" class="fi" value="${p.effectiveDate||''}" oninput="updatePolicyField(${i},'effectiveDate',this.value)">
@@ -3981,6 +3981,38 @@ document.addEventListener('keydown', e => {
   }
   if (_sectionKeys[e.key]) { go(_sectionKeys[e.key]); return; }
 });
+
+// ── BACKEND PAY TOGGLE ────────────────────────────────────────────────────────
+function getBackendPayEnabled() {
+  return localStorage.getItem('pcrm_auto_backend') === 'true';
+}
+function updateBackendPayDisplay(i, val) {
+  if (!getBackendPayEnabled()) return;
+  const fields = document.querySelectorAll(`[data-bp="${i}"]`);
+  const calc = val && parseFloat(val) > 0 ? (parseFloat(val)/3).toFixed(2) : '';
+  fields.forEach(f => { f.value = calc; });
+}
+function toggleBackendPay() {
+  const next = !getBackendPayEnabled();
+  localStorage.setItem('pcrm_auto_backend', next);
+  // Update all visible toggle labels
+  document.querySelectorAll('#bp-toggle-label').forEach(el => {
+    el.textContent = next ? 'ON' : 'OFF';
+    el.style.border = `1px solid ${next ? 'var(--green)' : 'var(--border2)'}`;
+    el.style.color = next ? 'var(--green)' : 'var(--text3)';
+    el.style.background = next ? 'var(--green-soft)' : 'var(--bg4)';
+  });
+  // Update all visible backend pay fields
+  if (next) {
+    document.querySelectorAll('[data-bp]').forEach(field => {
+      const i = field.dataset.bp;
+      const payoutInput = document.querySelector(`[data-pol="${i}"][data-key="payoutAmt"]`);
+      if (payoutInput) updateBackendPayDisplay(i, payoutInput.value);
+    });
+  } else {
+    document.querySelectorAll('[data-bp]').forEach(f => { f.value = ''; });
+  }
+}
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 applyTheme();
