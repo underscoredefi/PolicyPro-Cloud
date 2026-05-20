@@ -13,6 +13,28 @@ const _cache = {
 
 let _currentUserId = null;
 let _loadInProgress = false;
+let _pendingSyncs = 0;
+
+// ── Sync status indicator ─────────────────────────────────────────────────────
+function _setSyncStatus(state, msg) {
+  // state: 'syncing' | 'ok' | 'error'
+  const dot = document.getElementById('sync-status-dot');
+  const lbl = document.getElementById('sync-status-label');
+  if (!dot || !lbl) return;
+  const map = {
+    syncing: { color: 'var(--gold)',  shadow: 'var(--gold)',  text: 'Saving…' },
+    ok:      { color: 'var(--green)', shadow: 'var(--green)', text: 'Saved'   },
+    error:   { color: 'var(--red)',   shadow: 'var(--red)',   text: msg || 'Save failed' },
+  };
+  const s = map[state] || map.ok;
+  dot.style.background = s.color;
+  dot.style.boxShadow  = `0 0 6px ${s.shadow}`;
+  lbl.textContent = s.text;
+  lbl.style.color = state === 'error' ? 'var(--red)' : 'var(--text3)';
+  if (state === 'error' && typeof toast === 'function') {
+    toast('☁️ Cloud save failed: ' + s.text, 6000);
+  }
+}
 
 // ── UID generator (same as original) ─────────────────────────────────────────
 function uid() {
@@ -28,7 +50,18 @@ function ld(section) {
 function sv(section, records) {
   _cache[section] = JSON.parse(JSON.stringify(records));
   if (_currentUserId) {
-    _syncSection(section, records).catch(err => console.error('Cloud sync error:', err));
+    _pendingSyncs++;
+    _setSyncStatus('syncing');
+    _syncSection(section, records)
+      .then(() => {
+        _pendingSyncs = Math.max(0, _pendingSyncs - 1);
+        if (_pendingSyncs === 0) _setSyncStatus('ok');
+      })
+      .catch(err => {
+        _pendingSyncs = Math.max(0, _pendingSyncs - 1);
+        console.error('Cloud sync error:', err);
+        _setSyncStatus('error', err?.message || String(err));
+      });
   }
 }
 
@@ -57,6 +90,7 @@ async function loadFromCloud() {
 
     if (error) {
       console.error('Failed to load from cloud:', error);
+      _setSyncStatus('error', error.message);
       return false;
     }
 
@@ -69,6 +103,7 @@ async function loadFromCloud() {
       }
     });
 
+    _setSyncStatus('ok');
     return true;
   } finally {
     _loadInProgress = false;
@@ -76,19 +111,20 @@ async function loadFromCloud() {
 }
 
 // ── Sync a section to Supabase ────────────────────────────────────────────────
-// Upserts all records in the section, deletes any orphaned cloud rows.
 async function _syncSection(section, records) {
   if (!_currentUserId) return;
 
   // Get all existing cloud row ids for this section
-  const { data: existing } = await supabase
+  const { data: existing, error: fetchErr } = await supabase
     .from('crm_data')
     .select('id')
     .eq('user_id', _currentUserId)
     .eq('section', section);
 
-  const cloudIds  = new Set((existing || []).map(r => r.id));
-  const localIds  = new Set(records.map(r => r.id));
+  if (fetchErr) throw new Error(fetchErr.message);
+
+  const cloudIds = new Set((existing || []).map(r => r.id));
+  const localIds = new Set(records.map(r => r.id));
 
   // Upsert all local records
   if (records.length > 0) {
@@ -102,17 +138,18 @@ async function _syncSection(section, records) {
     const { error } = await supabase
       .from('crm_data')
       .upsert(rows, { onConflict: 'id' });
-    if (error) console.error('Upsert error:', section, error);
+    if (error) throw new Error(error.message);
   }
 
   // Delete cloud rows that no longer exist locally
   const toDelete = [...cloudIds].filter(id => !localIds.has(id));
   if (toDelete.length > 0) {
-    await supabase
+    const { error } = await supabase
       .from('crm_data')
       .delete()
       .in('id', toDelete)
       .eq('user_id', _currentUserId);
+    if (error) console.error('Delete error:', error.message);
   }
 }
 
