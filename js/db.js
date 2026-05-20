@@ -12,6 +12,7 @@ const _cache = {
 };
 
 let _currentUserId = null;
+let _loadInProgress = false;
 
 // ── UID generator (same as original) ─────────────────────────────────────────
 function uid() {
@@ -41,31 +42,37 @@ function svCallHistory(records) {
 
 // ── Load all data from Supabase into cache ────────────────────────────────────
 async function loadFromCloud() {
-  const { data: { user }, error: authErr } = await supabase.auth.getUser();
-  if (authErr || !user) return false;
+  if (_loadInProgress) return 'skipped';
+  _loadInProgress = true;
+  try {
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) return false;
 
-  _currentUserId = user.id;
+    _currentUserId = user.id;
 
-  const { data, error } = await supabase
-    .from('crm_data')
-    .select('id, section, data')
-    .eq('user_id', user.id);
+    const { data, error } = await supabase
+      .from('crm_data')
+      .select('id, section, data')
+      .eq('user_id', user.id);
 
-  if (error) {
-    console.error('Failed to load from cloud:', error);
-    return false;
-  }
-
-  // Reset cache
-  Object.keys(_cache).forEach(k => { _cache[k] = []; });
-
-  (data || []).forEach(row => {
-    if (_cache[row.section] !== undefined && row.data) {
-      _cache[row.section].push(row.data);
+    if (error) {
+      console.error('Failed to load from cloud:', error);
+      return false;
     }
-  });
 
-  return true;
+    // Reset cache
+    Object.keys(_cache).forEach(k => { _cache[k] = []; });
+
+    (data || []).forEach(row => {
+      if (_cache[row.section] !== undefined && row.data) {
+        _cache[row.section].push(row.data);
+      }
+    });
+
+    return true;
+  } finally {
+    _loadInProgress = false;
+  }
 }
 
 // ── Sync a section to Supabase ────────────────────────────────────────────────

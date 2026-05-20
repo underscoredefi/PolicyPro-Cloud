@@ -246,12 +246,16 @@ function setAuthState(signedIn) {
   document.body.classList.remove('auth-pending', 'signed-out', 'authenticated');
   document.body.classList.add(signedIn ? 'authenticated' : 'signed-out');
   if (signedIn) {
-    loadFromCloud().then(() => {
+    loadFromCloud().then(result => {
+      if (result === false) {
+        toast('⚠️ Could not load your data. Check connection and try refreshing.', 6000);
+      }
       seed();
       updateCounts();
       renderCurrent();
     }).catch(err => {
       console.error('Failed to load cloud data:', err);
+      toast('⚠️ Data load error — ' + (err?.message || 'unknown error'), 6000);
       seed();
       updateCounts();
       renderCurrent();
@@ -2992,9 +2996,9 @@ function openAutoExportSettings() {
 }
 
 // ── TOAST ────────────────────────────────────────────────────────────────────
-function toast(msg) {
+function toast(msg, ms=2800) {
   const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
-  document.body.appendChild(t); setTimeout(()=>t.remove(),2800);
+  document.body.appendChild(t); setTimeout(()=>t.remove(),ms);
 }
 
 // ── ESCAPE HELPER ─────────────────────────────────────────────────────────────
