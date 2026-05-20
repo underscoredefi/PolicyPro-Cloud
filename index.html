@@ -2115,7 +2115,14 @@ function buildPersonFields(sec, rec) {
           </div>
           ${isClient?`<div><label class="fl">💵 Carrier Payout Amount</label>
             <div class="prefix-wrap"><span class="prefix">$</span>
-            <input class="fi" data-pol="${i}" data-key="payoutAmt" value="${esc(p.payoutAmt)}" placeholder="e.g. 450.00" oninput="updatePolicyField(${i},'payoutAmt',this.value)">
+            <input class="fi" data-pol="${i}" data-key="payoutAmt" value="${esc(p.payoutAmt)}" placeholder="e.g. 450.00" oninput="updatePolicyField(${i},'payoutAmt',this.value);rerenderPolicies()">
+            </div></div>
+          <div><label class="fl">📅 Date Paid by Carrier</label>
+            <input type="date" class="fi" data-pol="${i}" data-key="payoutDate" value="${p.payoutDate||''}" oninput="updatePolicyField(${i},'payoutDate',this.value)">
+          </div>
+          <div><label class="fl">📊 Expected Backend Pay <span style="font-size:9.5px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0">(auto)</span></label>
+            <div class="prefix-wrap"><span class="prefix">$</span>
+            <input class="fi" value="${p.payoutAmt ? (parseFloat(p.payoutAmt)/3).toFixed(2) : ''}" placeholder="—" readonly style="opacity:.7;cursor:default">
             </div></div>`:''}
           <div><label class="fl">📅 Effective Date <span style="font-size:9.5px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0">(First Payment Date)</span></label>
             <input type="date" class="fi" data-pol="${i}" data-key="effectiveDate" value="${p.effectiveDate||''}" oninput="updatePolicyField(${i},'effectiveDate',this.value)">
@@ -3197,7 +3204,14 @@ function rerenderPolicies() {
         </div>
         ${isClient?`<div><label class="fl">💵 Carrier Payout Amount</label>
           <div class="prefix-wrap"><span class="prefix">$</span>
-          <input class="fi" value="${esc(p.payoutAmt)}" placeholder="e.g. 450.00" oninput="updatePolicyField(${i},'payoutAmt',this.value)">
+          <input class="fi" value="${esc(p.payoutAmt)}" placeholder="e.g. 450.00" oninput="updatePolicyField(${i},'payoutAmt',this.value);rerenderPolicies()">
+          </div></div>
+        <div><label class="fl">📅 Date Paid by Carrier</label>
+          <input type="date" class="fi" value="${p.payoutDate||''}" oninput="updatePolicyField(${i},'payoutDate',this.value)">
+        </div>
+        <div><label class="fl">📊 Expected Backend Pay <span style="font-size:9.5px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0">(auto)</span></label>
+          <div class="prefix-wrap"><span class="prefix">$</span>
+          <input class="fi" value="${p.payoutAmt ? (parseFloat(p.payoutAmt)/3).toFixed(2) : ''}" placeholder="—" readonly style="opacity:.7;cursor:default">
           </div></div>`:''}
         <div><label class="fl">📅 Effective Date <span style="font-size:9.5px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0">(First Payment Date)</span></label>
           <input type="date" class="fi" value="${p.effectiveDate||''}" oninput="updatePolicyField(${i},'effectiveDate',this.value)">
@@ -3219,7 +3233,7 @@ function rerenderPolicies() {
 }
 function addPolicy() {
   const pols = getPolicies();
-  pols.push({id:uid(), coverage:'', premium:'', annualPremium:'', carrier:'', product:'', policyNum:'', beneficiary:'', soldDate:'', effectiveDate:'', payoutAmt:'', chargeback:'', chargebackAmt:''});
+  pols.push({id:uid(), coverage:'', premium:'', annualPremium:'', carrier:'', product:'', policyNum:'', beneficiary:'', soldDate:'', effectiveDate:'', payoutAmt:'', payoutDate:'', chargeback:'', chargebackAmt:''});
   setPolicies(pols);
   rerenderPolicies();
   setTimeout(() => {
