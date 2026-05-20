@@ -212,6 +212,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
+<script src="js/db.js"></script>
 <script>
 // ── SUPABASE AUTH GATE ───────────────────────────────────────────────────────
 let authMode = 'signin';
@@ -490,25 +491,8 @@ function applyTheme() {
   }
 }
 
-// ── STORAGE ──────────────────────────────────────────────────────────────────
-const KEYS = {prospects:'pcrm_prospects',clients:'pcrm_clients',callers:'pcrm_callers',pipeline:'pcrm_pipeline',tasks:'pcrm_tasks'};
-const ld  = k => { try{return JSON.parse(localStorage.getItem(KEYS[k])||'[]')}catch{return[]} };
-const sv  = (k,d) => {
-  try {
-    localStorage.setItem(KEYS[k], JSON.stringify(d));
-  } catch(e) {
-    console.error('Storage save failed for', k, e);
-    if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-      alert('⚠️ Storage is full. Please export a backup (Export JSON) and clear some old data.');
-    }
-  }
-};
-const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+// ── STORAGE — provided by js/db.js (Supabase-backed ld/sv/uid/ldCallHistory/svCallHistory) ──
 
-// ── CALL HISTORY STORAGE ──────────────────────────────────────────────────────
-const HIST_KEY = 'pcrm_callhistory';
-function ldCallHistory() { try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]')}catch{return[]} }
-function svCallHistory(d) { localStorage.setItem(HIST_KEY, JSON.stringify(d)); }
 // Returns date string YYYY-MM-DD from ISO timestamp
 function isoToDate(ts) { return ts ? ts.slice(0,10) : ''; }
 
