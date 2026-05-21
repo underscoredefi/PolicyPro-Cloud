@@ -2919,15 +2919,25 @@ async function doAutoExport() {
 
 function checkAutoExport() {
   if (localStorage.getItem('pcrm_autoexport_enabled')!=='true') return;
-  const freq = localStorage.getItem('pcrm_autoexport_freq')||'daily';
+  const targetTime = localStorage.getItem('pcrm_autoexport_time')||'00:00';
+  const [th, tm]   = targetTime.split(':').map(Number);
+  const now        = new Date();
+  // Not the right minute yet
+  if (now.getHours() !== th || now.getMinutes() !== tm) return;
+  // Already ran within this minute window
   const last = new Date(localStorage.getItem('pcrm_autoexport_last')||0);
-  const now  = new Date();
+  if (now - last < 90000) return;
+  // Frequency gate
+  const freq = localStorage.getItem('pcrm_autoexport_freq')||'daily';
   let due = false;
-  if      (freq==='daily')   due = (now-last) >= 86400000;
-  else if (freq==='weekly')  due = (now-last) >= 604800000;
-  else if (freq==='monthly') {
+  if (freq==='daily') {
+    due = true;
+  } else if (freq==='weekly') {
+    const weekday = parseInt(localStorage.getItem('pcrm_autoexport_weekday')||'1');
+    due = now.getDay() === weekday;
+  } else if (freq==='monthly') {
     const day = parseInt(localStorage.getItem('pcrm_autoexport_monthday')||'1');
-    due = now.getDate()===day && (now-last)>=72000000;
+    due = now.getDate() === day;
   }
   if (due) doAutoExport();
 }
@@ -2940,23 +2950,31 @@ function initAutoExport() {
 function saveAutoExportSettings() {
   const enabled = document.getElementById('ae_enabled').checked;
   const freq    = document.getElementById('ae_freq').value;
+  const time    = document.getElementById('ae_time').value || '00:00';
+  const wday    = document.getElementById('ae_weekday').value;
   const mday    = document.getElementById('ae_monthday').value;
   localStorage.setItem('pcrm_autoexport_enabled', enabled ? 'true' : 'false');
   localStorage.setItem('pcrm_autoexport_freq', freq);
+  localStorage.setItem('pcrm_autoexport_time', time);
+  localStorage.setItem('pcrm_autoexport_weekday', wday||'1');
   localStorage.setItem('pcrm_autoexport_monthday', mday||'1');
   const overlay = document.getElementById('ae-overlay');
   if (overlay) overlay.remove();
-  toast(enabled ? '✅ Auto Export enabled ('+freq+')' : '⏹ Auto Export disabled');
+  const label = freq==='daily' ? 'daily at '+time : freq==='weekly' ? 'weekly at '+time : 'monthly at '+time;
+  toast(enabled ? '✅ Auto Export enabled ('+label+')' : '⏹ Auto Export disabled');
 }
 
 function openAutoExportSettings() {
   if (document.getElementById('ae-overlay')) return;
   const enabled    = localStorage.getItem('pcrm_autoexport_enabled')==='true';
   const freq       = localStorage.getItem('pcrm_autoexport_freq')||'daily';
+  const time       = localStorage.getItem('pcrm_autoexport_time')||'00:00';
+  const wday       = parseInt(localStorage.getItem('pcrm_autoexport_weekday')||'1');
   const mday       = localStorage.getItem('pcrm_autoexport_monthday')||'1';
   const folder     = localStorage.getItem('pcrm_autoexport_foldername')||'No folder selected';
   const lastExport = localStorage.getItem('pcrm_autoexport_last');
   const lastStr    = lastExport ? new Date(lastExport).toLocaleString() : 'Never';
+  const weekdays   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   document.body.insertAdjacentHTML('beforeend', `
     <div class="overlay" id="ae-overlay" onclick="if(event.target.id==='ae-overlay')document.getElementById('ae-overlay').remove()">
       <div class="modal" id="ae-modal" style="max-width:480px">
@@ -2987,11 +3005,24 @@ function openAutoExportSettings() {
           </div>
 
           <div>
+            <label class="fl">⏰ Export Time</label>
+            <input type="time" class="fi" id="ae_time" value="${esc(time)}" style="margin-top:6px;width:140px">
+            <div style="font-size:11px;color:var(--text3);margin-top:5px">App must be open at this time for the export to fire.</div>
+          </div>
+
+          <div>
             <label class="fl">Frequency</label>
-            <select class="fi" id="ae_freq" onchange="document.getElementById('ae_monthday_wrap').style.display=this.value==='monthly'?'block':'none'" style="margin-top:6px">
+            <select class="fi" id="ae_freq" onchange="(function(v){document.getElementById('ae_weekday_wrap').style.display=v==='weekly'?'block':'none';document.getElementById('ae_monthday_wrap').style.display=v==='monthly'?'block':'none';})(this.value)" style="margin-top:6px">
               <option value="daily"   ${freq==='daily'  ?'selected':''}>Daily</option>
               <option value="weekly"  ${freq==='weekly' ?'selected':''}>Weekly</option>
               <option value="monthly" ${freq==='monthly'?'selected':''}>Monthly</option>
+            </select>
+          </div>
+
+          <div id="ae_weekday_wrap" style="display:${freq==='weekly'?'block':'none'}">
+            <label class="fl">Day of Week</label>
+            <select class="fi" id="ae_weekday" style="margin-top:6px">
+              ${weekdays.map((d,i)=>`<option value="${i}" ${wday===i?'selected':''}>${d}</option>`).join('')}
             </select>
           </div>
 
