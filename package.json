@@ -1,0 +1,14 @@
+{
+  "name": "policypro-cloud",
+  "version": "1.0.0",
+  "description": "PolicyPro CRM — E2E test runner",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^25.9.1"
+  }
+}

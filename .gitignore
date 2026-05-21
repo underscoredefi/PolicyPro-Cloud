@@ -18,3 +18,8 @@ desktop.ini
 
 # Wrangler local cache
 .wrangler
+
+# Playwright
+node_modules/
+playwright-report/
+test-results/
