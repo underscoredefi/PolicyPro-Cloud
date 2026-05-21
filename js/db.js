@@ -124,12 +124,13 @@ async function _syncSection(section, records) {
   if (fetchErr) throw new Error(fetchErr.message);
 
   const cloudIds = new Set((existing || []).map(r => r.id));
-  const localIds = new Set(records.map(r => r.id));
+  // Prefix with section so callers/callhistory never share a PK (same uid() value)
+  const localIds = new Set(records.map(r => `${section}_${r.id}`));
 
   // Upsert all local records
   if (records.length > 0) {
     const rows = records.map(r => ({
-      id:         r.id,
+      id:         `${section}_${r.id}`,
       user_id:    _currentUserId,
       section:    section,
       data:       r,

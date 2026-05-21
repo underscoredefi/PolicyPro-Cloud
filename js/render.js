@@ -479,21 +479,10 @@ function renderChargebacks() {
 }
 
 // ── CALL HISTORY ─────────────────────────────────────────────────────────────
-let chDateFrom = '', chDateTo = '', chSearch = '', chInitialized = false;
+let chDateFrom = '', chDateTo = '', chSearch = '', chInitialized = false, chActivePill = 'today';
 
-function renderCallHistory() {
-  const hist = ldCallHistory();
-  const c = document.getElementById('content');
-  const allDates = [...new Set(hist.map(r => isoToDate(r.created)).filter(Boolean))].sort().reverse();
-  const today = new Date().toISOString().slice(0, 10);
-
-  // Default to today only on the very first render — not after "All Time" clears the range
-  if (!chInitialized) { chDateFrom = today; chDateTo = today; chInitialized = true; }
-
-  // Preserve search focus across re-renders
-  const wasSearchFocused = document.activeElement && document.activeElement.id === 'ch-search';
-
-  let filtered = hist.filter(r => {
+function _chFilter(hist) {
+  return hist.filter(r => {
     if (chSearch) {
       const sch = chSearch.toLowerCase();
       const nameMatch  = (`${r.first||''} ${r.last||''}`).toLowerCase().includes(sch);
@@ -506,6 +495,73 @@ function renderCallHistory() {
     if (chDateTo   && d > chDateTo)   return false;
     return true;
   });
+}
+
+function _chSetPill(pill) {
+  chActivePill = pill;
+  chSearch = '';
+  const today = new Date().toISOString().slice(0, 10);
+  if (pill === 'today') {
+    chDateFrom = chDateTo = today;
+  } else if (pill === 'week') {
+    const now = new Date();
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    chDateFrom = mon.toISOString().slice(0, 10);
+    chDateTo = today;
+  } else if (pill === 'month') {
+    const now = new Date();
+    chDateFrom = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    chDateTo = today;
+  } else if (pill === 'all') {
+    chDateFrom = chDateTo = '';
+  }
+  renderCallHistory();
+}
+
+function _chBuildDateStrip(hist) {
+  // Build call count map for last 60 days
+  const countMap = {};
+  hist.forEach(r => {
+    const d = isoToDate(r.created);
+    if (d) countMap[d] = (countMap[d] || 0) + 1;
+  });
+  const WD = ['S','M','T','W','T','F','S'];
+  const today = new Date().toISOString().slice(0, 10);
+  const days = [];
+  for (let i = 59; i >= 0; i--) {
+    const dt = new Date();
+    dt.setDate(dt.getDate() - i);
+    const iso = dt.toISOString().slice(0, 10);
+    days.push({ iso, wd: WD[dt.getDay()], num: dt.getDate(), count: countMap[iso] || 0 });
+  }
+  const isActive = d => chActivePill === 'custom'
+    ? d === chDateFrom && d === chDateTo
+    : (chActivePill === 'today' && d === today)
+      ? true
+      : false;
+
+  return days.map(({ iso, wd, num, count }) => {
+    const dotSize = count === 0 ? 4 : count < 3 ? 5 : count < 6 ? 7 : 9;
+    const active  = chDateFrom === iso && chDateTo === iso && !chSearch;
+    const cls     = ['ch-day', count > 0 ? 'has-calls' : '', iso === today ? 'today' : '', active ? 'active' : ''].filter(Boolean).join(' ');
+    return `<div class="${cls}" onclick="chDateFrom='${iso}';chDateTo='${iso}';chSearch='';chActivePill='custom';renderCallHistory()" title="${iso}${count ? ` — ${count} call${count>1?'s':''}` : ''}">
+      <span class="ch-day-wd">${wd}</span>
+      <span class="ch-day-num">${num}</span>
+      <div class="ch-day-dot" style="width:${dotSize}px;height:${dotSize}px"></div>
+    </div>`;
+  }).join('');
+}
+
+function renderCallHistory() {
+  const hist = ldCallHistory();
+  const c = document.getElementById('content');
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (!chInitialized) { chDateFrom = today; chDateTo = today; chActivePill = 'today'; chInitialized = true; }
+
+  const wasSearchFocused = document.activeElement && document.activeElement.id === 'ch-search';
+  const filtered = _chFilter(hist);
 
   const groups = {};
   filtered.forEach(r => {
@@ -515,139 +571,136 @@ function renderCallHistory() {
   });
   const sortedDates = Object.keys(groups).sort().reverse();
 
+  const pills = ['today','week','month','all','custom'];
+  const pillLabels = { today:'Today', week:'Week', month:'Month', all:'All', custom:'Custom' };
+
   let html = `
-  <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end">
-    <div>
-      <div style="font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">From</div>
-      <input type="date" class="fi" value="${chDateFrom}" onchange="chDateFrom=this.value;renderCallHistory()" style="width:150px">
+  <div class="ch-toolbar">
+    <div class="ch-search-wrap">
+      <span class="ch-search-icon">🔍</span>
+      <input id="ch-search" value="${esc(chSearch)}" placeholder="Name, phone, carrier…"
+        oninput="chSearch=this.value;chActivePill=chSearch?'custom':'${chActivePill}';renderCallHistory()">
+      <button class="ch-search-clear${chSearch ? ' visible' : ''}" onclick="chSearch='';renderCallHistory()" title="Clear">✕</button>
     </div>
-    <div>
-      <div style="font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">To</div>
-      <input type="date" class="fi" value="${chDateTo}" onchange="chDateTo=this.value;renderCallHistory()" style="width:150px">
+    <span class="ch-count-badge">${filtered.length} call${filtered.length !== 1 ? 's' : ''}</span>
+    <div class="ch-pills">
+      ${pills.map(p => `<button class="ch-pill${chActivePill===p?' active':''}" onclick="_chSetPill('${p}')">${pillLabels[p]}</button>`).join('')}
     </div>
-    <div style="flex:1;min-width:180px">
-      <div style="font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:5px">Search</div>
-      <input id="ch-search" class="fi" value="${esc(chSearch)}" placeholder="Name, phone, carrier…" oninput="chSearch=this.value;renderCallHistory()" style="width:100%">
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;padding-bottom:1px">
-      <button class="tb-btn" onclick="chDateFrom=chDateTo=new Date().toISOString().slice(0,10);chSearch='';renderCallHistory()">Today</button>
-      <button class="tb-btn" onclick="setChWeek()">This Week</button>
-      <button class="tb-btn" onclick="setChLastWeek()">Last Week</button>
-      <button class="tb-btn" onclick="chDateFrom='';chDateTo='';chSearch='';renderCallHistory()">All Time</button>
-      <button class="tb-btn" onclick="exportCallRange()" style="border-color:var(--gold);color:var(--gold)">📤 Export Range</button>
-    </div>
+    <button class="ch-export-btn" onclick="exportCallRange()" title="Export range as CSV">📤</button>
   </div>
-  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 18px;min-width:120px">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Calls in Range</div>
-      <div style="font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--gold)">${filtered.length}</div>
-    </div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 18px;min-width:120px">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Days Shown</div>
-      <div style="font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--blue)">${sortedDates.length}</div>
-    </div>
-    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 18px;min-width:120px">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);margin-bottom:4px">Total Logged</div>
-      <div style="font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text2)">${hist.length}</div>
-    </div>
+  <div class="ch-custom-range${chActivePill==='custom'?' open':''}">
+    <span class="cr-label">From</span>
+    <input type="date" value="${chDateFrom}" onchange="chDateFrom=this.value;renderCallHistory()">
+    <span class="cr-label">To</span>
+    <input type="date" value="${chDateTo}" onchange="chDateTo=this.value;renderCallHistory()">
+  </div>
+  <div class="ch-stat-bar">
+    <div class="ch-stat"><div class="ch-stat-stripe" style="background:var(--gold)"></div><div class="ch-stat-body"><div class="ch-stat-label">Calls in Range</div><div class="ch-stat-val" style="color:var(--gold)">${filtered.length}</div></div></div>
+    <div class="ch-stat"><div class="ch-stat-stripe" style="background:var(--blue)"></div><div class="ch-stat-body"><div class="ch-stat-label">Days Shown</div><div class="ch-stat-val" style="color:var(--blue)">${sortedDates.length}</div></div></div>
+    <div class="ch-stat"><div class="ch-stat-stripe" style="background:var(--text3)"></div><div class="ch-stat-body"><div class="ch-stat-label">Total Logged</div><div class="ch-stat-val" style="color:var(--text2)">${hist.length}</div></div></div>
   </div>`;
 
-  if (allDates.length > 0) {
-    html += `
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:16px">
-    <div style="font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Jump to Date</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      ${allDates.slice(0, 20).map(d => `<div class="f-chip ${d === chDateFrom && d === chDateTo && !chSearch ? 'on' : ''}" onclick="chDateFrom='${d}';chDateTo='${d}';chSearch='';renderCallHistory()" style="font-family:'JetBrains Mono',monospace;font-size:11px">${fmtDateLabel(d)}</div>`).join('')}
-    </div>
-  </div>`;
+  if (hist.length > 0) {
+    html += `<div class="ch-date-strip-wrap">
+      <div class="ch-strip-label">Jump to Date</div>
+      <div class="ch-date-strip" id="ch-strip">${_chBuildDateStrip(hist)}</div>
+    </div>`;
   }
 
   if (!sortedDates.length) {
-    html += `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">No calls found</div><div class="empty-sub">Try adjusting the date range or search filter</div></div>`;
+    html += `<div class="empty"><div class="empty-icon">📅</div><div class="empty-title">No calls found</div><div class="empty-sub">Try a different filter or clear search</div></div>`;
     c.innerHTML = html;
-    if (wasSearchFocused) { const si = document.getElementById('ch-search'); if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); } }
+    _chRestoreFocus(wasSearchFocused);
+    _chScrollStripToToday();
     return;
   }
 
   const allProspects = ld('prospects');
   const allClients   = ld('clients');
-  const matchKey = r => (r.phone || '').replace(/\D/g, '') + '|' + (r.first || '').toLowerCase() + '|' + (r.last || '').toLowerCase();
+  const matchKey = r => (r.phone||'').replace(/\D/g,'') + '|' + (r.first||'').toLowerCase() + '|' + (r.last||'').toLowerCase();
 
   sortedDates.forEach(date => {
     const dayRecs = groups[date];
-    html += `<div style="margin-bottom:24px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:700;color:var(--gold)">${fmtDateLabel(date)}</div>
-        <div style="font-size:11px;background:var(--gold-soft);color:var(--gold);padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace">${dayRecs.length} call${dayRecs.length !== 1 ? 's' : ''}</div>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <button onclick="exportSingleDay('${date}')" style="padding:3px 9px;border-radius:5px;border:1px solid var(--border2);background:var(--bg2);color:var(--text3);font-size:11px;cursor:pointer;font-family:'Outfit',sans-serif" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text3)'">📤 Export Day</button>
+    html += `<div class="ch-group">
+      <div class="ch-date-hdr">
+        <span class="ch-date-hdr-label">${fmtDateLabel(date)}</span>
+        <span class="ch-date-hdr-badge">${dayRecs.length} call${dayRecs.length!==1?'s':''}</span>
+        <div class="ch-date-hdr-line"></div>
+        <button class="ch-day-export" onclick="exportSingleDay('${date}')">📤 Export Day</button>
       </div>
-      <div style="overflow-x:auto"><table class="g-table"><thead><tr>
-        <th>Time</th><th>Name</th><th>DOB / Age</th><th>Phone</th>
-        <th>Coverage</th><th>Premium</th><th>Carrier</th><th>Status</th><th>Converted</th><th>Transfer To</th>
-      </tr></thead><tbody>`;
+      <div class="ch-cards">`;
 
     dayRecs.forEach(r => {
-      const age     = calcAge(r.dob);
-      const timeStr = r.created ? new Date(r.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
-      const rid     = r.histId || r.id;
-      const key     = matchKey(r);
-      const asClient   = allClients.find(c => matchKey(c) === key);
-      const asProspect = !asClient && allProspects.find(p => matchKey(p) === key);
-      const badge = asClient
-        ? `<span class="tag t-inforce" style="cursor:pointer" onclick="event.stopPropagation();showModal('clients',${JSON.stringify(asClient).replace(/"/g,'&quot;')},false)">🛡 Client</span>`
-        : asProspect
-          ? `<span class="tag t-prospect" style="cursor:pointer" onclick="event.stopPropagation();showModal('prospects',${JSON.stringify(asProspect).replace(/"/g,'&quot;')},false)">👥 Prospect</span>`
+      const timeStr   = r.created ? new Date(r.created).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '—';
+      const rid       = r.histId || r.id;
+      const key       = matchKey(r);
+      const asClient  = allClients.find(cl => matchKey(cl) === key);
+      const asProsp   = !asClient && allProspects.find(p => matchKey(p) === key);
+      const converted = asClient
+        ? `<span class="tag t-inforce" style="cursor:pointer;white-space:nowrap" onclick="event.stopPropagation();showModal('clients',${JSON.stringify(asClient).replace(/"/g,'&quot;')},false)">🛡 Client</span>`
+        : asProsp
+          ? `<span class="tag t-prospect" style="cursor:pointer;white-space:nowrap" onclick="event.stopPropagation();showModal('prospects',${JSON.stringify(asProsp).replace(/"/g,'&quot;')},false)">👥 Prospect</span>`
           : `<span style="color:var(--text3);font-size:12px">—</span>`;
 
-      html += `<tr style="cursor:pointer" onclick="openHistoryDetail('${rid}')">
-        <td style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">${timeStr}</td>
-        <td style="font-weight:600">${esc(r.first)} ${esc(r.last)}</td>
-        <td><div style="font-size:12px;color:var(--text2)">${fmtDOB(r.dob)}</div>${age !== null ? `<div class="age-badge" style="margin-top:2px">Age ${age}</div>` : ''}</td>
-        <td style="color:var(--text2);font-size:12.5px">${esc(r.phone) || '—'}</td>
-        <td style="color:var(--gold);font-family:'JetBrains Mono',monospace;font-size:12.5px">${fmtMoney(r.coverage)}</td>
-        <td style="color:var(--green);font-family:'JetBrains Mono',monospace;font-size:12.5px">${fmtPrem(r.premium)}</td>
-        <td style="color:var(--text2);font-size:12.5px">${esc(r.carrier) || '—'}</td>
-        <td>${sTag(r.status || 'New')}</td>
-        <td onclick="event.stopPropagation()">${badge}</td>
-        <td onclick="event.stopPropagation()"><div style="display:flex;gap:5px">
-          <button onclick="transferFromHistory('${rid}','prospects')" style="padding:4px 8px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);color:var(--gold);font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap" onmouseover="this.style.background='var(--gold-soft)'" onmouseout="this.style.background='var(--bg3)'">→ Prospect</button>
-          <button onclick="transferFromHistory('${rid}','clients')" style="padding:4px 8px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap" onmouseover="this.style.background='var(--green-soft)'" onmouseout="this.style.background='var(--bg3)'">→ Client</button>
-        </div></td>
-      </tr>`;
+      html += `<div class="ch-call-card" onclick="openHistoryDetail('${rid}')">
+        <span class="ch-call-time">${timeStr}</span>
+        <div class="ch-sep"></div>
+        <div class="ch-call-person">
+          <div class="ch-call-name">${esc(r.first)} ${esc(r.last)}</div>
+          <div class="ch-call-phone">${esc(r.phone)||'—'}</div>
+        </div>
+        <div class="ch-call-mid">
+          <div class="ch-call-carrier">${esc(r.carrier)||'—'}</div>
+          <div class="ch-call-amounts">
+            ${r.coverage ? `<span class="ch-call-cov">${fmtMoney(r.coverage)}</span>` : ''}
+            ${r.premium  ? `<span class="ch-call-prem">${fmtPrem(r.premium)}</span>` : ''}
+          </div>
+        </div>
+        <div class="ch-call-right" onclick="event.stopPropagation()">
+          ${sTag(r.status||'New')}
+          ${converted}
+          <div class="ch-call-actions" style="display:flex;gap:4px">
+            <button class="ch-act-btn to-p" onclick="transferFromHistory('${rid}','prospects')">→ Prospect</button>
+            <button class="ch-act-btn to-c" onclick="transferFromHistory('${rid}','clients')">→ Client</button>
+          </div>
+        </div>
+      </div>`;
     });
-    html += '</tbody></table></div></div>';
+
+    html += `</div></div>`;
   });
 
   c.innerHTML = html;
-  if (wasSearchFocused) {
-    const si = document.getElementById('ch-search');
-    if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
-  }
+  _chRestoreFocus(wasSearchFocused);
+  _chScrollStripToToday();
 }
 
-function setChWeek() {
-  const now = new Date();
-  const mon = new Date(now);
-  mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  mon.setHours(0, 0, 0, 0);
-  chDateFrom = mon.toISOString().slice(0, 10);
-  chDateTo   = now.toISOString().slice(0, 10);
-  chSearch = '';
-  renderCallHistory();
+function _chRestoreFocus(was) {
+  if (!was) return;
+  const si = document.getElementById('ch-search');
+  if (si) { si.focus(); si.setSelectionRange(si.value.length, si.value.length); }
 }
 
+function _chScrollStripToToday() {
+  const strip = document.getElementById('ch-strip');
+  if (!strip) return;
+  // Scroll to the end (today is last) smoothly
+  requestAnimationFrame(() => { strip.scrollLeft = strip.scrollWidth; });
+}
+
+// Keep legacy helpers for backward compat
+function setChWeek()     { _chSetPill('week'); }
 function setChLastWeek() {
   const now = new Date();
   const thisMon = new Date(now);
   thisMon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  thisMon.setHours(0, 0, 0, 0);
   const lastMon = new Date(thisMon);
   lastMon.setDate(thisMon.getDate() - 7);
   const lastSun = new Date(lastMon);
   lastSun.setDate(lastMon.getDate() + 6);
   chDateFrom = lastMon.toISOString().slice(0, 10);
   chDateTo   = lastSun.toISOString().slice(0, 10);
+  chActivePill = 'custom';
   chSearch = '';
   renderCallHistory();
 }

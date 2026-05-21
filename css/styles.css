@@ -556,3 +556,104 @@ html.light .auth-field input{background:#f0f4fa;color:#111827;border-color:#d4da
 .update-entry+.update-entry{border-top:1px solid var(--border);padding-top:20px}
 html.light .update-modal{box-shadow:0 12px 40px rgba(0,0,0,.15)}
 html.light .update-modal-hdr{background:linear-gradient(135deg,var(--bg3),var(--bg2))}
+
+/* ── CALL HISTORY REDESIGN ────────────────────────────────────────────────── */
+/* Toolbar */
+.ch-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.ch-search-wrap{position:relative;flex:1;min-width:180px;display:flex;align-items:center;gap:8px}
+.ch-search-wrap input{width:100%;padding:8px 34px 8px 32px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--font-body);font-size:13px;outline:none;transition:border-color .15s}
+.ch-search-wrap input:focus{border-color:var(--gold)}
+.ch-search-icon{position:absolute;left:10px;color:var(--text3);font-size:13px;pointer-events:none;line-height:1}
+.ch-search-clear{position:absolute;right:8px;background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;border-radius:4px;display:none;transition:color .12s}
+.ch-search-clear.visible{display:block}
+.ch-search-clear:hover{color:var(--text)}
+.ch-count-badge{display:inline-flex;align-items:center;white-space:nowrap;background:var(--bg4);color:var(--text3);font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+/* Pills */
+.ch-pills{display:flex;gap:5px;flex-wrap:wrap}
+.ch-pill{padding:7px 13px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--font-body);white-space:nowrap}
+.ch-pill:hover{border-color:var(--gold);color:var(--gold)}
+.ch-pill.active{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
+/* Export button */
+.ch-export-btn{padding:7px 11px;border-radius:var(--r-sm);border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;transition:all .15s;font-size:13px;flex-shrink:0}
+.ch-export-btn:hover{border-color:var(--gold);color:var(--gold)}
+/* Custom date range expander */
+.ch-custom-range{display:none;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding:11px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r)}
+.ch-custom-range.open{display:flex}
+.ch-custom-range .cr-label{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3)}
+.ch-custom-range input[type="date"]{padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r-sm);color:var(--text);font-size:13px;font-family:var(--font-body);outline:none;transition:border-color .15s}
+.ch-custom-range input[type="date"]:focus{border-color:var(--gold)}
+/* Stat bar */
+.ch-stat-bar{display:flex;margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.ch-stat{flex:1;display:flex;align-items:center;gap:11px;padding:11px 16px;border-right:1px solid var(--border)}
+.ch-stat:last-child{border-right:none}
+.ch-stat-stripe{width:3px;height:28px;border-radius:2px;flex-shrink:0}
+.ch-stat-body{display:flex;flex-direction:column;gap:1px}
+.ch-stat-label{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3)}
+.ch-stat-val{font-size:20px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1.1}
+/* Date strip */
+.ch-date-strip-wrap{margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px}
+.ch-strip-label{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:9px}
+.ch-date-strip{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:1px}
+.ch-date-strip::-webkit-scrollbar{display:none}
+.ch-day{display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 7px;border-radius:8px;cursor:pointer;transition:all .15s;flex-shrink:0;min-width:36px}
+.ch-day:hover{background:var(--bg4)}
+.ch-day.active{background:var(--gold)}
+.ch-day-wd{font-size:9px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text3);line-height:1}
+.ch-day.active .ch-day-wd{color:#090e1a}
+.ch-day.today .ch-day-num{text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--gold)}
+.ch-day.active.today .ch-day-num{text-decoration:none}
+.ch-day-num{font-size:13px;font-weight:700;color:var(--text3);line-height:1;font-family:'JetBrains Mono',monospace}
+.ch-day.has-calls .ch-day-num{color:var(--text)}
+.ch-day.active .ch-day-num{color:#090e1a}
+.ch-day-dot{border-radius:50%;background:transparent;transition:all .15s;flex-shrink:0}
+.ch-day.has-calls .ch-day-dot{background:var(--gold)}
+.ch-day.active .ch-day-dot{background:#090e1a}
+/* Date group */
+.ch-group{margin-bottom:20px}
+.ch-date-hdr{position:sticky;top:0;z-index:10;background:var(--bg);display:flex;align-items:center;gap:10px;padding:8px 0 8px;margin-bottom:8px;border-bottom:1px solid var(--border)}
+.ch-date-hdr-label{font-size:13px;font-weight:700;color:var(--gold);white-space:nowrap}
+.ch-date-hdr-badge{font-size:11px;background:var(--gold-soft);color:var(--gold);padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.ch-date-hdr-line{flex:1;height:1px;background:var(--border)}
+.ch-day-export{padding:3px 9px;border-radius:5px;border:1px solid var(--border2);background:var(--bg2);color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font-body);transition:color .15s;white-space:nowrap}
+.ch-day-export:hover{color:var(--gold);border-color:var(--gold)}
+/* Call cards */
+.ch-cards{display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.ch-call-card{display:flex;align-items:center;padding:12px 16px;cursor:pointer;transition:background .12s,border-left-color .12s;border-bottom:1px solid var(--border);border-left:3px solid transparent;gap:0}
+.ch-call-card:last-child{border-bottom:none}
+.ch-call-card:hover{background:var(--bg3);border-left-color:var(--gold)}
+.ch-call-time{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3);white-space:nowrap;min-width:52px;flex-shrink:0}
+.ch-sep{width:1px;background:var(--border2);height:30px;margin:0 13px;flex-shrink:0}
+.ch-call-person{flex:1.2;min-width:0;padding-right:12px}
+.ch-call-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-call-phone{font-size:11px;color:var(--text3);margin-top:1px}
+.ch-call-mid{flex:1.5;min-width:0;display:flex;flex-direction:column;gap:2px;padding-right:12px}
+.ch-call-carrier{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-call-amounts{display:flex;gap:10px;align-items:center}
+.ch-call-cov{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold)}
+.ch-call-prem{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--green)}
+.ch-call-right{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.ch-act-btn{padding:4px 9px;border-radius:5px;border:1px solid var(--border2);background:var(--bg3);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-body);white-space:nowrap;transition:background .12s;line-height:1.4}
+.ch-act-btn.to-p{color:var(--gold)}
+.ch-act-btn.to-p:hover{background:var(--gold-soft);border-color:var(--gold)}
+.ch-act-btn.to-c{color:var(--green)}
+.ch-act-btn.to-c:hover{background:var(--green-soft);border-color:var(--green)}
+/* Light mode overrides */
+html.light .ch-date-hdr{background:var(--bg)}
+html.light .ch-day.active .ch-day-wd,
+html.light .ch-day.active .ch-day-num{color:#fff}
+html.light .ch-day.active .ch-day-dot{background:#fff}
+html.light .ch-day.active{background:var(--gold2)}
+
+/* ── UI POLISH ────────────────────────────────────────────────────────────── */
+/* Modal backdrop blur */
+.modal-overlay{backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+/* Toast slide-up */
+@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.toast{animation:slideUp .2s ease}
+/* Sync dot pulse while saving */
+@keyframes syncPulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* Nav item active left-border */
+.nav-item.active{border-left:2px solid var(--gold);padding-left:12px}
+/* Stat card count pop animation */
+@keyframes countPop{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
+.stat-pop{animation:countPop .25s ease}
