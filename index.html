@@ -3022,7 +3022,7 @@ function openAutoExportSettings() {
           <div id="ae_weekday_wrap" style="display:${freq==='weekly'?'block':'none'}">
             <label class="fl">Day of Week</label>
             <select class="fi" id="ae_weekday" style="margin-top:6px">
-              ${weekdays.map((d,i)=>`<option value="${i}" ${wday===i?'selected':''}>${d}</option>`).join('')}
+              ${weekdays.map((d,i)=>'<option value="'+i+'" '+(wday===i?'selected':'')+'>'+d+'</option>').join('')}
             </select>
           </div>
 
