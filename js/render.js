@@ -293,6 +293,10 @@ function renderDashboard() {
   const yearPrem    = cls.reduce((a, r) => a + annPremInRange(r, yStart, yEnd), 0);
   const allTimePrem = cls.reduce((a, r) => a + annPrem(r), 0);
   const totalPayout = cls.reduce((a, r) => a + (parseFloat(r.payoutAmt) || 0), 0);
+  const totalExpBackendPay = cls.reduce((a, r) => {
+    const pols = Array.isArray(r.policies) ? r.policies : [];
+    return a + pols.reduce((s, p) => s + (parseFloat(p.payoutAmt) || 0) / 3, 0);
+  }, 0);
 
   const soldAnnPrem = cls.reduce((a, r) => {
     const pols = Array.isArray(r.policies) ? r.policies.filter(p => p.soldDate) : [];
@@ -387,6 +391,7 @@ function renderDashboard() {
   <div class="stats-row">
     <div class="stat-card gold"><div class="stat-label">Ann. Premium Sold</div><div class="stat-val gold">$${soldAnnPrem.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div class="stat-sub">Active clients (sold policies)</div></div>
     <div class="stat-card blue"><div class="stat-label">Total Carrier Payouts</div><div class="stat-val blue">$${totalPayout.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div class="stat-sub">Logged payout amounts</div></div>
+    <div class="stat-card" style="border-color:var(--purple)"><div class="stat-label" style="color:var(--text3)">Exp. Backend Pay</div><div class="stat-val" style="color:var(--purple)">$${totalExpBackendPay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div><div class="stat-sub">Sum of carrier payouts ÷ 3</div></div>
   </div>
   <div class="dash-grid" style="margin-bottom:16px">
     <div class="dash-card">
