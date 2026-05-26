@@ -150,12 +150,14 @@
 <div id="main">
   <div id="topbar">
     <div class="page-title" id="page-title">Prospects</div>
-    <div class="view-tabs" id="view-tabs">
-      <div class="view-tab active" onclick="setView('grid')" id="tab-grid">⊞ Grid</div>
-      <div class="view-tab" onclick="setView('list')" id="tab-list">☰ List</div>
-      <div class="view-tab" onclick="setView('kanban')" id="tab-kanban">⊟ Board</div>
-    </div>
     <div class="topbar-spacer"></div>
+    <select id="sort-select" class="tb-sort-select" onchange="sortField=this.value.split(':')[0];sortDir=this.value.split(':')[1];renderCurrent()" style="display:none">
+      <option value="created:desc">Date Added ↓</option>
+      <option value="created:asc">Date Added ↑</option>
+      <option value="last:asc">Name A→Z</option>
+      <option value="last:desc">Name Z→A</option>
+      <option value="status:asc">Status A→Z</option>
+    </select>
     <div class="search-wrap">
       <span style="color:var(--text3)">🔍</span>
       <input id="search-inp" placeholder="Search name, carrier, phone…" oninput="renderCurrent()">
@@ -591,6 +593,7 @@ function seed() {
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let section = 'prospects', view = 'grid', filterOn = false, filterStatus = 'all';
+let sortField = 'created', sortDir = 'desc';
 
 function go(s) {
   section = s;
@@ -600,11 +603,10 @@ function go(s) {
   document.getElementById('page-title').textContent = titles[s]||s;
   document.getElementById('search-inp').value = '';
   filterStatus = 'all'; filterOn = false;
-  const vt = document.getElementById('view-tabs');
   const ab = document.getElementById('add-btn');
-  const hideTabs = s==='dashboard' || s==='callhistory' || s==='chargebacks';
-  vt.style.display = hideTabs?'none':'flex';
   ab.style.display = (s==='dashboard'||s==='callhistory'||s==='chargebacks')?'none':'';
+  const ss = document.getElementById('sort-select');
+  if (ss) ss.style.display = (s==='prospects'||s==='clients') ? '' : 'none';
   renderCurrent(); updateCounts();
 }
 
@@ -649,6 +651,18 @@ function renderPeople(sec, q='') {
     data = data.filter(r => (r.created||'').slice(0,10) === today);
   }
   if (q) data = data.filter(r => JSON.stringify(r).toLowerCase().includes(q));
+  // Sort (prospects + clients only)
+  if (sec === 'prospects' || sec === 'clients') {
+    data = [...data].sort((a, b) => {
+      let av = '', bv = '';
+      if (sortField === 'created') { av = a.created||''; bv = b.created||''; }
+      else if (sortField === 'last') { av = (a.last||'').toLowerCase(); bv = (b.last||'').toLowerCase(); }
+      else if (sortField === 'status') { av = (a.status||'').toLowerCase(); bv = (b.status||'').toLowerCase(); }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
 
   const statusSets = {
     prospects: ['all','Hot','Warm','Cold','New'],
